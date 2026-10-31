@@ -1,0 +1,6 @@
+{
+  "name": "TokShop - วิดีโอสั้น & สั่งซื้อสินค้า",
+  "description": "ฟีดวิดีโอสั้นสไตล์ TikTok พร้อมปุ่มไลก์ คอมเมนต์ แชร์ และกล่องปักหมุดสั่งซื้อสินค้าด่วน",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
