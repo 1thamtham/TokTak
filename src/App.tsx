@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { INITIAL_VIDEOS, INITIAL_PRODUCTS, INITIAL_ORDERS } from './data/mockFeed';
-import { VideoClip, Product, OrderItem, UserProfile } from './types/feed';
+import { INITIAL_VIDEOS, INITIAL_PRODUCTS, INITIAL_ORDERS, INITIAL_CATEGORIES } from './data/mockFeed';
+import { VideoClip, Product, OrderItem, UserProfile, Category } from './types/feed';
 import { VideoItem } from './components/VideoItem';
 import { TopNav, TopNavTab } from './components/TopNav';
 import { BottomTabBar } from './components/BottomTabBar';
@@ -17,11 +17,101 @@ import { CreateVideoModal } from './components/CreateVideoModal';
 import { AddProductModal } from './components/AddProductModal';
 import { EditProfileModal } from './components/EditProfileModal';
 import { CheckCircle, Wrench } from 'lucide-react';
+import {
+  savePostToDB,
+  getAllPostsFromDB,
+  deletePostFromDB,
+  updatePostInDB,
+  reconstructClipsFromRecords,
+} from './utils/indexedDB';
 
 export default function App() {
-  const [products, setProducts] = useState<Product[]>(INITIAL_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>(() => {
+    const saved = localStorage.getItem('tokshop_products');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // fallback
+      }
+    }
+    return INITIAL_PRODUCTS;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('tokshop_products', JSON.stringify(products));
+  }, [products]);
+
   const [videos, setVideos] = useState<VideoClip[]>(INITIAL_VIDEOS);
+
+  // Load persistent user posts and large video/photo blobs from browser IndexedDB
+  useEffect(() => {
+    let isCancelled = false;
+
+    async function loadPersistedPosts() {
+      try {
+        const records = await getAllPostsFromDB();
+        if (isCancelled || records.length === 0) return;
+
+        const storedClips = reconstructClipsFromRecords(records);
+        setVideos((prev) => {
+          const storedIds = new Set(storedClips.map((c) => c.id));
+          const remainingDefaults = prev.filter((v) => !storedIds.has(v.id));
+
+          // Ensure video1.mp4 is the leading default clip
+          const video1Clip = remainingDefaults.find(
+            (c) => c.videoUrl.includes('video1.mp4') || c.id === 'vid-video1-01'
+          );
+          const orderedDefaults = video1Clip
+            ? [video1Clip, ...remainingDefaults.filter((c) => c !== video1Clip)]
+            : remainingDefaults;
+
+          // User's persisted posts come first so they are immediately visible on refresh, followed by defaults
+          return [...storedClips, ...orderedDefaults];
+        });
+      } catch (err) {
+        console.error('Failed to load posts from IndexedDB:', err);
+      }
+    }
+
+    loadPersistedPosts();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
   const [orders, setOrders] = useState<OrderItem[]>(INITIAL_ORDERS);
+  const [categories, setCategories] = useState<Category[]>(() => {
+    const saved = localStorage.getItem('tokshop_categories');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        // fallback
+      }
+    }
+    return INITIAL_CATEGORIES;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('tokshop_categories', JSON.stringify(categories));
+  }, [categories]);
+
+  const handleAddCategory = (newCat: Category) => {
+    setCategories((prev) => {
+      if (prev.some((c) => c.id === newCat.id)) return prev;
+      return [...prev, newCat];
+    });
+  };
+
+  const handleUpdateCategory = (updated: Category) => {
+    setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+  };
+
+  const handleDeleteCategory = (catId: string) => {
+    setCategories((prev) => prev.filter((c) => c.id !== catId));
+  };
 
   // User Profile state (Google / Gmail login)
   const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
@@ -151,11 +241,13 @@ export default function App() {
       prev.map((clip) => {
         if (clip.id === id) {
           const isLiked = !clip.isLiked;
-          return {
+          const updated = {
             ...clip,
             isLiked,
             likesCount: isLiked ? clip.likesCount + 1 : clip.likesCount - 1,
           };
+          updatePostInDB(updated).catch(() => {});
+          return updated;
         }
         return clip;
       })
@@ -193,11 +285,13 @@ export default function App() {
             likes: 0,
             isLiked: false,
           };
-          return {
+          const updated = {
             ...clip,
             commentsCount: clip.commentsCount + 1,
             comments: [newComment, ...clip.comments],
           };
+          updatePostInDB(updated).catch(() => {});
+          return updated;
         }
         return clip;
       })
@@ -246,17 +340,27 @@ export default function App() {
     showToast('ลบสินค้าเรียบร้อยแล้ว');
   };
 
-  const handleAddVideo = (newVideo: VideoClip) => {
+  const handleAddVideo = async (newVideo: VideoClip, mediaBlob?: Blob | File) => {
+    try {
+      await savePostToDB(newVideo, mediaBlob);
+    } catch (e) {
+      console.warn('Failed to save video to IndexedDB:', e);
+    }
     setVideos((prev) => [newVideo, ...prev]);
     setActiveIndex(0);
     setActiveBottomTab('home');
-    showToast('อัปโหลดคลิปวิดีโอใหม่ลงฟีดสำเร็จ!');
+    showToast('อัปโหลดคลิปวิดีโอใหม่ลงฟีดสำเร็จ! บันทึกไฟล์ลง IndexedDB ของเครื่องแล้ว');
   };
 
-  const handleDeleteVideo = (videoId: string) => {
+  const handleDeleteVideo = async (videoId: string) => {
     setVideos((prev) => prev.filter((v) => v.id !== videoId));
+    try {
+      await deletePostFromDB(videoId);
+    } catch (e) {
+      console.warn('Failed to delete video from IndexedDB:', e);
+    }
     setActiveIndex(0);
-    showToast('ลบคลิปวิดีโอออกจากระบบแล้ว');
+    showToast('ลบคลิปวิดีโอออกจากระบบและ IndexedDB แล้ว');
   };
 
   const handleUpdateOrderStatus = (orderId: string, status: OrderItem['status']) => {
@@ -473,14 +577,19 @@ export default function App() {
         currentUser={currentUser}
         products={products}
         onClose={() => setIsCreateVideoModalOpen(false)}
-        onVideoCreated={(newVideo) => {
+        onVideoCreated={async (newVideo, mediaBlob) => {
+          try {
+            await savePostToDB(newVideo, mediaBlob);
+          } catch (e) {
+            console.error('Failed to save post to IndexedDB:', e);
+          }
           setVideos((prev) => [newVideo, ...prev]);
           setActiveIndex(0);
           setActiveBottomTab('home');
           showToast(
             newVideo.product
-              ? `สร้างคลิปปักตระกล้า (${newVideo.product.name}) สำเร็จ! แสดงในหน้าฟีดและโปรไฟล์ของคุณแล้ว`
-              : 'โพสต์คลิปวิดีโอสำเร็จ! แสดงในหน้าฟีดและโปรไฟล์ของคุณแล้ว'
+              ? `สร้างคลิปปักตระกล้า (${newVideo.product.name}) สำเร็จ! บันทึกลง IndexedDB แล้ว (รีเฟรชไม่หาย)`
+              : 'โพสต์รูปภาพ/วิดีโอสำเร็จ! บันทึกไฟล์ลง IndexedDB ของเครื่องแล้ว (รีเฟรชไม่หาย)'
           );
         }}
         onOpenSellerRegistration={() => setIsSellerRegisterModalOpen(true)}
@@ -501,6 +610,8 @@ export default function App() {
       <AddProductModal
         isOpen={isAddProductModalOpen}
         currentUser={currentUser}
+        categories={categories}
+        onAddCategory={handleAddCategory}
         onClose={() => setIsAddProductModalOpen(false)}
         onAddProduct={(newProd) => {
           handleAddProduct(newProd);
@@ -565,9 +676,13 @@ export default function App() {
           products={products}
           videos={videos}
           orders={orders}
+          categories={categories}
           onAddProduct={handleAddProduct}
           onUpdateProduct={handleUpdateProduct}
           onDeleteProduct={handleDeleteProduct}
+          onAddCategory={handleAddCategory}
+          onUpdateCategory={handleUpdateCategory}
+          onDeleteCategory={handleDeleteCategory}
           onAddVideo={handleAddVideo}
           onDeleteVideo={handleDeleteVideo}
           onUpdateOrderStatus={handleUpdateOrderStatus}

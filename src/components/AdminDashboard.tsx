@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   X,
   Trash2,
@@ -23,12 +23,17 @@ import {
   Monitor,
   Smartphone,
 } from 'lucide-react';
-import { Product, VideoClip, OrderItem, StoreRegistration } from '../types/feed';
+import { Product, VideoClip, OrderItem, StoreRegistration, Category } from '../types/feed';
+import { INITIAL_CATEGORIES, detectCategoryFromName, CATEGORY_KEYWORDS } from '../data/mockFeed';
 
 interface AdminDashboardProps {
   products: Product[];
   videos: VideoClip[];
   orders: OrderItem[];
+  categories?: Category[];
+  onAddCategory?: (category: Category) => void;
+  onUpdateCategory?: (category: Category) => void;
+  onDeleteCategory?: (categoryId: string) => void;
   onAddProduct: (product: Product) => void;
   onUpdateProduct: (product: Product) => void;
   onDeleteProduct: (productId: string) => void;
@@ -42,6 +47,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   products,
   videos,
   orders,
+  categories: propCategories,
+  onAddCategory,
+  onUpdateCategory,
+  onDeleteCategory,
   onAddProduct,
   onUpdateProduct,
   onDeleteProduct,
@@ -51,7 +60,50 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onClose,
 }) => {
   // Navigation / active section
-  const [activeTab, setActiveTab] = useState<'products' | 'videos' | 'orders' | 'registration' | 'all'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'categories' | 'videos' | 'orders' | 'registration' | 'all'>('products');
+
+  // Categories State from backend
+  const [categories, setCategories] = useState<Category[]>(() => {
+    return propCategories && propCategories.length > 0 ? propCategories : INITIAL_CATEGORIES;
+  });
+
+  useEffect(() => {
+    if (propCategories && propCategories.length > 0) {
+      setCategories(propCategories);
+    }
+  }, [propCategories]);
+
+  // Category management modals and inputs
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [catNameInput, setCatNameInput] = useState('');
+  const [catIconInput, setCatIconInput] = useState('🛍️');
+
+  // Quick add category inside Product Modal
+  const [isQuickAddCat, setIsQuickAddCat] = useState(false);
+  const [quickCatName, setQuickCatName] = useState('');
+  const [quickCatIcon, setQuickCatIcon] = useState('📦');
+  const [modalCategoryId, setModalCategoryId] = useState('CAT01');
+  const [modalCategory, setModalCategory] = useState('เสื้อผ้าและแฟชั่น');
+  const [autoMatchedCat, setAutoMatchedCat] = useState<string | null>(null);
+
+  // ฟังก์ชันอัจฉริยะ: วิเคราะห์ชื่อสินค้าแล้วเลือกหมวดหมู่ให้อัตโนมัติทันทีที่พิมพ์ (Smart Auto-Category)
+  const handleProductNameChange = (nameValue: string) => {
+    setModalName(nameValue);
+    const detected = detectCategoryFromName(nameValue, categories);
+    if (detected) {
+      setModalCategoryId(detected.categoryId);
+      setModalCategory(detected.categoryName);
+      setAutoMatchedCat(detected.categoryId);
+    } else {
+      setAutoMatchedCat(null);
+    }
+  };
+
+  const getCategoryDisplay = (catId?: string) => {
+    const found = categories.find((c) => c.id === catId || c.name === catId);
+    return found ? `${found.icon} ${found.name}` : (catId || modalCategory || '👕 เสื้อผ้าและแฟชั่น');
+  };
 
   // ข้อมูลการจดทะเบียนพาณิชย์ & DBD Registered (กรมพัฒนาธุรกิจการค้า)
   const [storeReg, setStoreReg] = useState<StoreRegistration>({
@@ -121,6 +173,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [modalPrice, setModalPrice] = useState<string>('390');
   const [modalStock, setModalStock] = useState<string>('100');
   const [modalSizes, setModalSizes] = useState<string[]>(['S', 'M', 'L', 'XL', 'Oversized']);
+  const [modalColors, setModalColors] = useState<string[]>(['สีดำ (Black)', 'สีขาว (White)']);
+  const [customColorInput, setCustomColorInput] = useState<string>('');
+  const [customSizeInput, setCustomSizeInput] = useState<string>('');
   const [modalWeight, setModalWeight] = useState<string>('250');
   const [modalCarrier, setModalCarrier] = useState<string>(
     '📮 ไปรษณีย์ไทย (EMS ด่วนพิเศษ 1-2 วันทำการ)'
@@ -196,6 +251,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     );
   };
 
+  // Toggle color checkbox
+  const handleToggleColor = (color: string) => {
+    setModalColors((prev) =>
+      prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]
+    );
+  };
+
+  const handleAddCustomColor = () => {
+    const trimmed = customColorInput.trim();
+    if (trimmed && !modalColors.includes(trimmed)) {
+      setModalColors((prev) => [...prev, trimmed]);
+      setCustomColorInput('');
+    }
+  };
+
+  const handleAddCustomSize = () => {
+    const trimmed = customSizeInput.trim();
+    if (trimmed && !modalSizes.includes(trimmed)) {
+      setModalSizes((prev) => [...prev, trimmed]);
+      setCustomSizeInput('');
+    }
+  };
+
   // Video Upload Form State (Section 2)
   const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string>('');
@@ -210,6 +288,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   // Preset demo videos to allow testing without local files
   const sampleVideos = [
+    {
+      name: 'คลิปมอเตอร์ไซค์ motor.mp4 ในโปรเจกต์ (MP4) 🏍️',
+      url: '/motor.mp4',
+    },
     {
       name: 'คลิปสตรีทแวร์ สเก็ตบอร์ด (MP4)',
       url: 'https://assets.mixkit.co/videos/preview/mixkit-young-man-wearing-a-red-t-shirt-skateboarding-41444-large.mp4',
@@ -232,7 +314,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setModalName(prod.name);
       setModalPrice(String(prod.price));
       setModalStock(String(prod.stock || 100));
+      const catId = prod.categoryId || (categories.find((c) => c.name === prod.category)?.id) || 'CAT01';
+      setModalCategoryId(catId);
+      setModalCategory(prod.category || (categories.find((c) => c.id === catId)?.name) || 'เสื้อผ้าและแฟชั่น');
       setModalSizes(prod.sizes && prod.sizes.length > 0 ? prod.sizes : ['S', 'M', 'L', 'XL']);
+      setModalColors(prod.colors && prod.colors.length > 0 ? prod.colors : ['สีดำ (Black)', 'สีขาว (White)']);
+      setCustomColorInput('');
+      setCustomSizeInput('');
       setModalWeight(String(prod.weight || 250));
       setModalCarrier(
         prod.shippingCarrier || '📮 ไปรษณีย์ไทย (EMS ด่วนพิเศษ 1-2 วันทำการ)'
@@ -253,7 +341,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       setModalName('');
       setModalPrice('390');
       setModalStock('100');
+      const firstCat = categories[0] || { id: 'CAT01', name: 'เสื้อผ้าและแฟชั่น' };
+      setModalCategoryId(firstCat.id);
+      setModalCategory(firstCat.name);
+      setIsQuickAddCat(false);
       setModalSizes(['S', 'M', 'L', 'XL', 'Oversized']);
+      setModalColors(['สีดำ (Black)', 'สีขาว (White)']);
+      setCustomColorInput('');
+      setCustomSizeInput('');
       setModalWeight('250');
       setModalCarrier('📮 ไปรษณีย์ไทย (EMS ด่วนพิเศษ 1-2 วันทำการ)');
       setModalFda('');
@@ -305,6 +400,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const sku = modalSku.trim() || 'P003';
     const stockNum = modalStock ? Number(modalStock) : 100;
     const weightNum = modalWeight ? Number(modalWeight) : 250;
+    const selectedCat = categories.find((c) => c.id === modalCategoryId);
+    const catName = modalCategory.trim() || selectedCat?.name || 'เสื้อผ้าและแฟชั่น';
 
     if (editingProduct) {
       const updated: Product = {
@@ -314,6 +411,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         price: priceNum,
         originalPrice: Math.round(priceNum * 1.4),
         stock: stockNum,
+        category: catName,
+        categoryId: modalCategoryId,
+        colors: modalColors.length > 0 ? modalColors : ['สีดำ (Black)', 'สีขาว (White)'],
         sizes: modalSizes.length > 0 ? modalSizes : ['S', 'M', 'L', 'XL', 'Oversized'],
         weight: weightNum,
         shippingCarrier: modalCarrier,
@@ -336,13 +436,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         rating: 5.0,
         salesCount: '0 ขายแล้ว',
         stock: stockNum,
-        category: 'เสื้อยืดพรีเมียม',
+        category: catName,
+        categoryId: modalCategoryId,
         imageUrl:
           modalImageFile ||
           modalGalleryImages[0] ||
           'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=500&auto=format&fit=crop&q=80',
         galleryImages: modalGalleryImages,
-        colors: ['ดำ (Black)', 'ขาว (White)'],
+        colors: modalColors.length > 0 ? modalColors : ['สีดำ (Black)', 'สีขาว (White)'],
         sizes: modalSizes.length > 0 ? modalSizes : ['S', 'M', 'L', 'XL', 'Oversized'],
         weight: weightNum,
         shippingCarrier: modalCarrier,
@@ -356,6 +457,91 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     alert(`บันทึกและเพิ่มสินค้า "${name}" ลงระบบอีคอมเมิร์ซเรียบร้อย!`);
     closeProductModal();
+  };
+
+  // Quick add category inside Product Modal
+  const handleQuickAddCategory = () => {
+    if (!quickCatName.trim()) {
+      alert('กรุณากรอกชื่อหมวดหมู่ครับ');
+      return;
+    }
+    const newId = `CAT${String(categories.length + 1).padStart(2, '0')}`;
+    const newCat: Category = {
+      id: newId,
+      name: quickCatName.trim(),
+      icon: quickCatIcon.trim() || '📦',
+    };
+    if (onAddCategory) {
+      onAddCategory(newCat);
+    }
+    setCategories((prev) => [...prev, newCat]);
+    setModalCategoryId(newId);
+    setModalCategory(newCat.name);
+    setQuickCatName('');
+    setIsQuickAddCat(false);
+    alert(`เพิ่มหมวดหมู่ "${newCat.icon} ${newCat.name}" เรียบร้อยแล้ว!`);
+  };
+
+  // Category Manager Modal functions
+  const openAddCategoryModal = () => {
+    setEditingCategory(null);
+    setCatNameInput('');
+    setCatIconInput('🛍️');
+    setIsCategoryModalOpen(true);
+  };
+
+  const openEditCategoryModal = (cat: Category) => {
+    setEditingCategory(cat);
+    setCatNameInput(cat.name);
+    setCatIconInput(cat.icon);
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleSaveCategory = () => {
+    if (!catNameInput.trim()) {
+      alert('กรุณากรอกชื่อหมวดหมู่ครับ');
+      return;
+    }
+    if (editingCategory) {
+      const updatedCat: Category = {
+        ...editingCategory,
+        name: catNameInput.trim(),
+        icon: catIconInput.trim() || '🛍️',
+      };
+      if (onUpdateCategory) {
+        onUpdateCategory(updatedCat);
+      }
+      setCategories((prev) =>
+        prev.map((c) => (c.id === editingCategory.id ? updatedCat : c))
+      );
+      alert('แก้ไขหมวดหมู่เรียบร้อยแล้ว!');
+    } else {
+      const newId = `CAT${String(categories.length + 1).padStart(2, '0')}`;
+      const newCat: Category = {
+        id: newId,
+        name: catNameInput.trim(),
+        icon: catIconInput.trim() || '🛍️',
+      };
+      if (onAddCategory) {
+        onAddCategory(newCat);
+      }
+      setCategories((prev) => [...prev, newCat]);
+      alert(`เพิ่มหมวดหมู่ "${newCat.icon} ${newCat.name}" เรียบร้อยแล้ว!`);
+    }
+    setIsCategoryModalOpen(false);
+  };
+
+  const handleDeleteCategory = (catId: string) => {
+    if (categories.length <= 1) {
+      alert('ต้องมีหมวดหมู่อย่างน้อย 1 หมวดหมู่ในระบบครับ');
+      return;
+    }
+    if (window.confirm('คุณต้องการลบหมวดหมู่นี้ใช่หรือไม่?')) {
+      if (onDeleteCategory) {
+        onDeleteCategory(catId);
+      }
+      setCategories((prev) => prev.filter((c) => c.id !== catId));
+    }
   };
 
   const saveProduct = saveAdvancedProduct;
@@ -456,6 +642,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               👕 1. จัดการสินค้าและรหัสสินค้า
             </button>
             <button
+              onClick={() => setActiveTab('categories')}
+              className={`w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium rounded-lg transition-colors text-left cursor-pointer ${
+                activeTab === 'categories'
+                  ? 'bg-purple-50 text-purple-700 font-bold'
+                  : 'text-gray-600 hover:bg-gray-50'
+              }`}
+            >
+              <span>📂 2. จัดการหมวดหมู่ (TikTok)</span>
+              <span className="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full font-bold">
+                {categories.length}
+              </span>
+            </button>
+            <button
               onClick={() => setActiveTab('videos')}
               className={`w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-lg transition-colors text-left cursor-pointer ${
                 activeTab === 'videos'
@@ -463,7 +662,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
-              🎬 2. สร้างและลงคลิปวิดีโอ
+              🎬 3. สร้างและลงคลิปวิดีโอ
             </button>
             <button
               onClick={() => setActiveTab('orders')}
@@ -473,7 +672,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   : 'text-gray-600 hover:bg-gray-50'
               }`}
             >
-              <span>📦 3. คำสั่งซื้อลูกค้า</span>
+              <span>📦 4. คำสั่งซื้อลูกค้า</span>
               <span className="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full font-bold">
                 {orders.length}
               </span>
@@ -487,7 +686,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               }`}
             >
               <span className="flex items-center gap-2">
-                <span>📜</span> 4. เลขที่ทะเบียน
+                <span>📜</span> 5. เลขที่ทะเบียน
               </span>
               <span className="bg-emerald-100 text-emerald-700 text-[10px] px-1.5 py-0.5 rounded-full font-bold">
                 DBD รับรอง
@@ -532,7 +731,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               activeTab === 'products' ? 'bg-purple-600 text-white font-bold' : 'bg-white text-gray-700'
             }`}
           >
-            👕 1. สินค้า & รหัส
+            👕 1. สินค้า
+          </button>
+          <button
+            onClick={() => setActiveTab('categories')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap cursor-pointer ${
+              activeTab === 'categories' ? 'bg-purple-600 text-white font-bold' : 'bg-white text-gray-700'
+            }`}
+          >
+            📂 2. หมวดหมู่ ({categories.length})
           </button>
           <button
             onClick={() => setActiveTab('videos')}
@@ -540,7 +747,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               activeTab === 'videos' ? 'bg-purple-600 text-white font-bold' : 'bg-white text-gray-700'
             }`}
           >
-            🎬 2. สร้างคลิปวิดีโอ
+            🎬 3. สร้างคลิป
           </button>
           <button
             onClick={() => setActiveTab('orders')}
@@ -548,7 +755,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               activeTab === 'orders' ? 'bg-purple-600 text-white font-bold' : 'bg-white text-gray-700'
             }`}
           >
-            📦 3. ออร์เดอร์ ({orders.length})
+            📦 4. ออร์เดอร์ ({orders.length})
           </button>
           <button
             onClick={() => setActiveTab('registration')}
@@ -556,7 +763,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               activeTab === 'registration' ? 'bg-purple-600 text-white font-bold' : 'bg-white text-gray-700'
             }`}
           >
-            <span>📜 4. เลขที่ทะเบียน</span>
+            <span>📜 5. ทะเบียน</span>
             <span className="bg-emerald-600 text-white text-[9px] px-1 rounded font-bold">DBD</span>
           </button>
         </div>
@@ -614,6 +821,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             👕 1. จัดการสินค้า ({products.length})
           </button>
           <button
+            onClick={() => setActiveTab('categories')}
+            className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
+              activeTab === 'categories'
+                ? 'bg-purple-600 text-white shadow-sm'
+                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+            }`}
+          >
+            📂 2. จัดการหมวดหมู่ ({categories.length})
+          </button>
+          <button
             onClick={() => setActiveTab('videos')}
             className={`px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all cursor-pointer whitespace-nowrap ${
               activeTab === 'videos'
@@ -621,7 +838,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
             }`}
           >
-            🎬 2. สร้างคลิปวิดีโอ ({videos.length})
+            🎬 3. สร้างคลิปวิดีโอ ({videos.length})
           </button>
           <button
             onClick={() => setActiveTab('orders')}
@@ -631,7 +848,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
             }`}
           >
-            📦 3. คำสั่งซื้อ ({orders.length})
+            📦 4. คำสั่งซื้อ ({orders.length})
           </button>
           <button
             onClick={() => setActiveTab('registration')}
@@ -641,7 +858,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
             }`}
           >
-            <span>📜 4. เลขที่ทะเบียน</span>
+            <span>📜 5. เลขที่ทะเบียน</span>
             <span className="bg-emerald-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">
               DBD รับรอง
             </span>
@@ -685,6 +902,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <th className="py-3 px-4">รหัสสินค้า (SKU)</th>
                   <th className="py-3 px-4">รูปภาพ</th>
                   <th className="py-3 px-4">ชื่อสินค้า</th>
+                  <th className="py-3 px-4">หมวดหมู่</th>
                   <th className="py-3 px-4">ราคา</th>
                   <th className="py-3 px-4">จัดการ</th>
                 </tr>
@@ -709,6 +927,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <div className="text-xs text-gray-400 truncate max-w-xs">
                         {p.description}
                       </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="bg-purple-50 text-purple-700 border border-purple-200/60 px-2.5 py-1 rounded-full text-xs font-semibold inline-block">
+                        {getCategoryDisplay(p.categoryId || (categories.find(c => c.name === p.category)?.id))}
+                      </span>
                     </td>
                     <td className="py-3 px-4 font-semibold text-gray-800 font-mono">
                       {p.price} บาท
@@ -739,6 +962,72 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </table>
           </div>
         </div>
+        )}
+
+        {/* ส่วนที่ 2: จัดการหมวดหมู่สินค้ามาตรฐาน (TikTok Shop Categories) */}
+        {(activeTab === 'all' || activeTab === 'categories') && (
+          <div id="categories" className="bg-white rounded-2xl shadow-sm p-5 sm:p-6 animate-in fade-in border border-gray-100 space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b pb-4">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                  <span>📂</span>
+                  <span>หมวดหมู่สินค้ามาตรฐาน (TikTok Shop Categories)</span>
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  เพิ่ม แก้ไข หรือลบหมวดหมู่ เพื่อให้ร้านค้าและสมาชิกเลือกใช้เป็น Dropdown ตอนลงสินค้า
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={openAddCategoryModal}
+                className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold shadow-md hover:shadow-lg transition flex items-center gap-1.5 cursor-pointer active:scale-95"
+              >
+                <span>+ เพิ่มหมวดหมู่ใหม่</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+              {categories.map((cat) => {
+                const count = products.filter(
+                  (p) => p.categoryId === cat.id || p.category === cat.name
+                ).length;
+                return (
+                  <div
+                    key={cat.id}
+                    className="border border-gray-200 rounded-2xl p-3.5 flex items-center justify-between hover:border-purple-300 hover:bg-purple-50/30 transition shadow-xs bg-white group"
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <span className="text-2xl bg-gray-50 border border-gray-100 p-2 rounded-xl shrink-0 shadow-inner group-hover:scale-105 transition-transform">
+                        {cat.icon}
+                      </span>
+                      <div className="truncate min-w-0">
+                        <p className="text-sm font-bold text-gray-800 truncate">{cat.name}</p>
+                        <p className="text-xs text-gray-400 font-mono mt-0.5">
+                          {cat.id} • {count} สินค้า
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 ml-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => openEditCategoryModal(cat)}
+                        className="text-xs text-blue-600 hover:bg-blue-50 px-2 py-1 rounded-lg font-medium cursor-pointer"
+                      >
+                        แก้ไข
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        className="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded-lg font-medium cursor-pointer"
+                      >
+                        ลบ
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         )}
 
         {/* ส่วนที่ 2: หน้าต่างสร้างและลงคลิปวิดีโอสไตล์ TikTok (ปุ่มเดียวเลือกแกลเลอรี) */}
@@ -1594,9 +1883,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => openProductModal()}
-                  className="px-3.5 py-1.5 rounded-lg bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-bold transition cursor-pointer"
+                  className="px-3.5 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold transition cursor-pointer flex items-center gap-1.5 shadow-sm"
                 >
-                  + เพิ่มสินค้าใหม่พร้อมรหัส
+                  <span>+ เพิ่มสินค้าใหม่ (Auto-Category)</span>
                 </button>
               </div>
 
@@ -1606,6 +1895,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <tr className="border-b text-gray-400 bg-gray-50/50">
                       <th className="py-2.5 px-3">รหัสสินค้า (SKU)</th>
                       <th className="py-2.5 px-3">ชื่อสินค้า</th>
+                      <th className="py-2.5 px-3">หมวดหมู่</th>
                       <th className="py-2.5 px-3">เลขที่ทะเบียนพาณิชย์</th>
                       <th className="py-2.5 px-3">มาตรฐาน อย. / มอก.</th>
                       <th className="py-2.5 px-3">ระบบขนส่ง</th>
@@ -1623,7 +1913,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                           </td>
                           <td className="py-3 px-3">
                             <div className="font-semibold text-gray-800 line-clamp-1">{p.name}</div>
-                            <div className="text-[11px] text-gray-400">฿{p.price.toLocaleString()}</div>
+                            <div className="text-[11px] text-gray-400">฿{p.price.toLocaleString()} • สต็อก {p.stock || 0} ชิ้น</div>
+                          </td>
+                          <td className="py-3 px-3">
+                            <span className="bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full text-xs font-semibold whitespace-nowrap inline-flex items-center gap-1 border border-purple-200">
+                              {getCategoryDisplay(p.categoryId || p.category)}
+                            </span>
                           </td>
                           <td className="py-3 px-3 font-mono text-xs text-gray-700">
                             <span className="bg-gray-100 px-2 py-0.5 rounded border border-gray-200">
@@ -1694,10 +1989,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="flex justify-between items-center border-b border-gray-200 pb-4">
               <div>
                 <h3 className="font-bold text-gray-800 text-lg">
-                  👕 {editingProduct ? 'แก้ไขข้อมูลสินค้า' : 'เพิ่มสินค้าใหม่ (E-Commerce Standard)'}
+                  👕 {editingProduct ? 'แก้ไขข้อมูลสินค้า' : 'เพิ่มสินค้าใหม่ (Auto-Category)'}
                 </h3>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  กรอกข้อมูลรายละเอียดสินค้า สต็อก และการจัดส่งให้ครบถ้วน
+                <p className="text-xs text-purple-600 font-medium mt-0.5">
+                  ✨ พิมพ์ชื่อสินค้า ระบบจะค้นหาและจับคู่หมวดหมู่ให้อัตโนมัติทันที
                 </p>
               </div>
               <button
@@ -1727,17 +2022,125 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
                 <div>
                   <label htmlFor="productName" className="block font-semibold text-gray-700 mb-1">
-                    ชื่อสินค้า <span className="text-red-500">*</span>
+                    ชื่อสินค้า (พิมพ์เพื่อจับคู่หมวดหมู่) <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="text"
                     id="productName"
                     value={modalName}
-                    onChange={(e) => setModalName(e.target.value)}
-                    placeholder="เช่น เสื้อยืดสตรีทโอเวอร์ไซส์..."
+                    onChange={(e) => handleProductNameChange(e.target.value)}
+                    placeholder="ลองพิมพ์ เช่น ลิปสติก, หูฟังบลูทูธ, อาหารแมว, เสื้อยืด..."
                     className="w-full px-3 py-2 border border-gray-300 rounded-xl outline-none focus:ring-2 focus:ring-purple-500 bg-white text-gray-900 placeholder:text-gray-400"
                   />
                 </div>
+              </div>
+
+              {/* 1.1 หมวดหมู่สินค้า (Dropdown จากหลังบ้าน + ปุ่มเพิ่มหมวดหมู่ + Smart Auto-Category) */}
+              <div className="bg-purple-50/50 p-4 rounded-xl border border-purple-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="productCategorySelect" className="block font-semibold text-gray-800 text-sm flex items-center gap-1.5">
+                      <span>🏷️ หมวดหมู่สินค้า</span>
+                      <span className="text-xs font-normal text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full">
+                        {categories.length} หมวดหมู่
+                      </span>
+                    </label>
+                    {autoMatchedCat && (
+                      <span className="bg-emerald-100 text-emerald-800 text-xs px-2.5 py-0.5 rounded-full font-bold inline-flex items-center gap-1 border border-emerald-300 animate-in fade-in">
+                        ✨ เลือกอัตโนมัติจากชื่อสินค้าแล้ว
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickAddCat(!isQuickAddCat)}
+                    className="text-xs font-bold text-purple-700 hover:text-purple-900 bg-white border border-purple-300 hover:border-purple-400 px-2.5 py-1 rounded-lg transition-colors flex items-center gap-1 cursor-pointer shadow-2xs"
+                  >
+                    <span>{isQuickAddCat ? '✕ ปิด' : '+ เพิ่มหมวดหมู่ใหม่'}</span>
+                  </button>
+                </div>
+
+                {/* Dropdown เลือกหมวดหมู่ */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <span className="block text-xs font-medium text-gray-600 mb-1">
+                      เลือกจากหมวดหมู่มาตรฐานหลังบ้าน:
+                    </span>
+                    <select
+                      id="productCategorySelect"
+                      value={modalCategoryId}
+                      onChange={(e) => {
+                        const selId = e.target.value;
+                        setModalCategoryId(selId);
+                        setAutoMatchedCat(null);
+                        const found = categories.find((c) => c.id === selId);
+                        if (found) {
+                          setModalCategory(found.name);
+                        }
+                      }}
+                      className="w-full px-3 py-2 border border-purple-300 rounded-xl bg-white text-gray-900 font-medium outline-none focus:ring-2 focus:ring-purple-500 text-sm cursor-pointer"
+                    >
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.icon} {cat.name} ({cat.id})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <span className="block text-xs font-medium text-gray-600 mb-1">
+                      ชื่อหมวดหมู่ที่แสดง:
+                    </span>
+                    <input
+                      type="text"
+                      value={modalCategory}
+                      onChange={(e) => setModalCategory(e.target.value)}
+                      placeholder="ชื่อหมวดหมู่ที่แสดงบนหน้าร้าน"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-xl bg-white text-gray-900 text-sm outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                </div>
+
+                {/* กล่องเพิ่มหมวดหมู่ด่วน (Quick Add) */}
+                {isQuickAddCat && (
+                  <div className="mt-2 p-3 bg-white rounded-xl border border-purple-200 shadow-xs space-y-2 animate-in fade-in">
+                    <div className="text-xs font-bold text-purple-800 flex items-center justify-between">
+                      <span>✨ เพิ่มหมวดหมู่ใหม่ลงในระบบหลังบ้านทันที:</span>
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        value={quickCatIcon}
+                        onChange={(e) => setQuickCatIcon(e.target.value)}
+                        placeholder="ไอคอน เช่น 🎒"
+                        maxLength={4}
+                        className="w-16 px-2.5 py-1.5 border border-gray-300 rounded-lg text-center text-sm outline-none focus:ring-2 focus:ring-purple-500 bg-gray-50"
+                        title="ไอคอนหมวดหมู่ (อิโมจิ)"
+                      />
+                      <input
+                        type="text"
+                        value={quickCatName}
+                        onChange={(e) => setQuickCatName(e.target.value)}
+                        placeholder="ชื่อหมวดหมู่ใหม่ เช่น เครื่องเขียนและอุปกรณ์..."
+                        className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-purple-500"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleQuickAddCategory();
+                          }
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={handleQuickAddCategory}
+                        className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3.5 py-2 rounded-lg transition-colors cursor-pointer shrink-0"
+                      >
+                        บันทึกหมวดหมู่
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* 2. ราคาและสต็อก */}
@@ -1770,31 +2173,190 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               </div>
 
-              {/* 3. ตัวเลือกสินค้า (ไซส์ / สี) */}
-              <div>
-                <label className="block font-semibold text-gray-700 mb-1">
-                  ตัวเลือกสินค้า (ขนาด / ไซส์)
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {['S', 'M', 'L', 'XL', 'Oversized'].map((size) => (
-                    <label
-                      key={size}
-                      className={`flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-xs cursor-pointer select-none transition-colors ${
-                        modalSizes.includes(size)
-                          ? 'bg-purple-50 border-purple-400 text-purple-700 font-bold'
-                          : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={modalSizes.includes(size)}
-                        onChange={() => handleToggleSize(size)}
-                        className="accent-purple-600 cursor-pointer"
-                      />
-                      <span>{size}</span>
+              {/* 3. ตัวเลือกสินค้า: สี (Color) และ เบอร์ / ไซส์ (Numbers & Sizes) */}
+              <div className="space-y-4 bg-gray-50/70 p-4 rounded-xl border border-gray-200">
+                
+                {/* 3.1 ตัวเลือก สี (Colors) */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block font-semibold text-gray-800 text-sm flex items-center gap-1.5">
+                      <span>🎨 ตัวเลือก สี (Colors)</span>
+                      <span className="text-xs font-normal text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full font-mono">
+                        เลือกแล้ว {modalColors.length} สี
+                      </span>
                     </label>
-                  ))}
+                    <span className="text-[11px] text-gray-500">ติ๊กเพื่อเลือก หรือพิมพ์เพิ่มเอง</span>
+                  </div>
+
+                  {/* Preset Colors */}
+                  <div className="flex flex-wrap gap-2 mb-2.5">
+                    {[
+                      { name: 'สีดำ (Black)', dot: 'bg-black border border-white/20' },
+                      { name: 'สีขาว (White)', dot: 'bg-white border border-gray-400' },
+                      { name: 'สีเทา (Grey)', dot: 'bg-gray-500' },
+                      { name: 'สีแดง (Red)', dot: 'bg-red-500' },
+                      { name: 'สีกรม/น้ำเงิน (Navy)', dot: 'bg-blue-900' },
+                      { name: 'สีเขียวโอลีฟ (Olive)', dot: 'bg-emerald-800' },
+                      { name: 'สีครีม/เบจ (Beige)', dot: 'bg-amber-100 border border-amber-300' },
+                      { name: 'สีชมพู (Pink)', dot: 'bg-pink-400' },
+                      { name: 'สีน้ำตาล (Brown)', dot: 'bg-amber-900' },
+                    ].map((col) => (
+                      <label
+                        key={col.name}
+                        className={`flex items-center gap-2 border px-3 py-1.5 rounded-lg text-xs cursor-pointer select-none transition-all ${
+                          modalColors.includes(col.name)
+                            ? 'bg-purple-100/70 border-purple-500 text-purple-900 font-bold shadow-2xs'
+                            : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={modalColors.includes(col.name)}
+                          onChange={() => handleToggleColor(col.name)}
+                          className="accent-purple-600 cursor-pointer"
+                        />
+                        <span className={`w-3 h-3 rounded-full shrink-0 ${col.dot}`} />
+                        <span>{col.name}</span>
+                      </label>
+                    ))}
+                  </div>
+
+                  {/* Custom Color Input */}
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={customColorInput}
+                      onChange={(e) => setCustomColorInput(e.target.value)}
+                      placeholder="พิมพ์ชื่อสีที่ต้องการ เช่น ส้มอิฐ, ม่วงพาสเทล..."
+                      className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddCustomColor();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomColor}
+                      className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
+                    >
+                      + เพิ่มสี
+                    </button>
+                  </div>
                 </div>
+
+                <div className="border-t border-gray-200" />
+
+                {/* 3.2 ตัวเลือก เบอร์ และ ไซส์ (Numbers & Sizes) */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="block font-semibold text-gray-800 text-sm flex items-center gap-1.5">
+                      <span>📏 ตัวเลือก เบอร์ และ ไซส์ (Sizes & Numbers)</span>
+                      <span className="text-xs font-normal text-purple-600 bg-purple-100 px-2 py-0.5 rounded-full font-mono">
+                        เลือกแล้ว {modalSizes.length} รายการ
+                      </span>
+                    </label>
+                    <span className="text-[11px] text-gray-500">รองรับทั้งเบอร์รองเท้า/กางเกงและไซส์เสื้อ</span>
+                  </div>
+
+                  {/* Group 1: ไซส์เสื้อผ้ามาตรฐาน */}
+                  <div className="mb-2">
+                    <span className="block text-[11px] font-semibold text-gray-600 mb-1">
+                      👕 ไซส์มาตรฐาน (เสื้อผ้า):
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {['S', 'M', 'L', 'XL', '2XL', '3XL', 'Oversized', 'Free Size'].map((size) => (
+                        <label
+                          key={size}
+                          className={`flex items-center gap-1.5 border px-2.5 py-1 rounded-lg text-xs cursor-pointer select-none transition-colors ${
+                            modalSizes.includes(size)
+                              ? 'bg-purple-100/80 border-purple-500 text-purple-900 font-bold shadow-2xs'
+                              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={modalSizes.includes(size)}
+                            onChange={() => handleToggleSize(size)}
+                            className="accent-purple-600 cursor-pointer"
+                          />
+                          <span>{size}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Group 2: เบอร์รองเท้า / กางเกง (Numbers) */}
+                  <div className="mb-2.5">
+                    <span className="block text-[11px] font-semibold text-gray-600 mb-1">
+                      👟 เบอร์รองเท้า / กางเกง / ขนาดหมายเลข:
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        'เบอร์ 36',
+                        'เบอร์ 37',
+                        'เบอร์ 38',
+                        'เบอร์ 39',
+                        'เบอร์ 40',
+                        'เบอร์ 41',
+                        'เบอร์ 42',
+                        'เบอร์ 43',
+                        'เบอร์ 44',
+                        'เบอร์ 45',
+                        'เบอร์ 28',
+                        'เบอร์ 30',
+                        'เบอร์ 32',
+                        'เบอร์ 34',
+                        'เบอร์ 1',
+                        'เบอร์ 2',
+                        'เบอร์ 3',
+                      ].map((num) => (
+                        <label
+                          key={num}
+                          className={`flex items-center gap-1.5 border px-2.5 py-1 rounded-lg text-xs cursor-pointer select-none transition-colors ${
+                            modalSizes.includes(num)
+                              ? 'bg-amber-100 border-amber-500 text-amber-900 font-bold shadow-2xs'
+                              : 'bg-white border-gray-200 text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={modalSizes.includes(num)}
+                            onChange={() => handleToggleSize(num)}
+                            className="accent-amber-600 cursor-pointer"
+                          />
+                          <span>{num}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom Number / Size Input */}
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={customSizeInput}
+                      onChange={(e) => setCustomSizeInput(e.target.value)}
+                      placeholder="พิมพ์เบอร์หรือไซส์เอง เช่น เบอร์ 46, 4XL, เอว 38..."
+                      className="flex-1 px-3 py-1.5 border border-gray-300 rounded-lg text-xs outline-none focus:ring-2 focus:ring-purple-500 bg-white"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddCustomSize();
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomSize}
+                      className="bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
+                    >
+                      + เพิ่มเบอร์/ไซส์
+                    </button>
+                  </div>
+                </div>
+
               </div>
 
               {/* 4. น้ำหนักและระบบขนส่ง (รองรับไปรษณีย์ไทย EMS / Flash / Kerry / J&T) */}
@@ -2401,6 +2963,124 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   ปิดหน้าต่าง
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal เพิ่ม / แก้ไขหมวดหมู่สินค้าหลัก */}
+      {isCategoryModalOpen && (
+        <div
+          onClick={() => setIsCategoryModalOpen(false)}
+          className="fixed inset-0 bg-black/60 backdrop-blur-xs flex justify-center items-center z-[110] p-4 animate-in fade-in"
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-5 text-gray-900 border border-gray-100"
+          >
+            {/* Header */}
+            <div className="flex justify-between items-center border-b border-gray-200 pb-3">
+              <div>
+                <h3 className="font-bold text-gray-800 text-lg">
+                  {editingCategory ? '✏️ แก้ไขหมวดหมู่' : '✨ เพิ่มหมวดหมู่ใหม่'}
+                </h3>
+                <p className="text-xs text-gray-500 mt-0.5">
+                  {editingCategory
+                    ? `รหัสหมวดหมู่: ${editingCategory.id}`
+                    : `รหัสที่จะสร้าง: CAT${String(categories.length + 1).padStart(2, '0')}`}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 font-bold text-2xl cursor-pointer p-1"
+              >
+                &times;
+              </button>
+            </div>
+
+            {/* Form */}
+            <div className="space-y-4 text-sm">
+              <div>
+                <label className="block font-semibold text-gray-700 mb-1">
+                  ไอคอนหมวดหมู่ (Emoji / Icon)
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="text"
+                    value={catIconInput}
+                    onChange={(e) => setCatIconInput(e.target.value)}
+                    placeholder="👕"
+                    maxLength={4}
+                    className="w-16 px-3 py-2 border border-gray-300 rounded-xl text-center text-xl bg-gray-50 outline-none focus:ring-2 focus:ring-purple-500 font-sans"
+                  />
+                  <div className="flex flex-wrap gap-1.5 flex-1">
+                    {['👕', '💄', '🍜', '📱', '🛋️', '🔌', '💊', '🍼', '🐾', '⚽', '👟', '🚗', '📦', '🎒', '🎮', '🏠', '🎁'].map((emoji) => (
+                      <button
+                        type="button"
+                        key={emoji}
+                        onClick={() => setCatIconInput(emoji)}
+                        className={`w-7 h-7 flex items-center justify-center rounded-lg text-sm border transition-colors cursor-pointer ${
+                          catIconInput === emoji
+                            ? 'bg-purple-100 border-purple-500 shadow-xs'
+                            : 'bg-white border-gray-200 hover:bg-gray-100'
+                        }`}
+                      >
+                        {emoji}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="catNameInput" className="block font-semibold text-gray-700 mb-1">
+                  ชื่อหมวดหมู่ <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  id="catNameInput"
+                  value={catNameInput}
+                  onChange={(e) => setCatNameInput(e.target.value)}
+                  placeholder="เช่น ของเล่นและงานอดิเรก..."
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 bg-white"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleSaveCategory();
+                    }
+                  }}
+                  autoFocus
+                />
+              </div>
+
+              <div className="p-3 bg-purple-50 rounded-xl border border-purple-100 flex items-center gap-3">
+                <span className="text-2xl">{catIconInput || '📦'}</span>
+                <div>
+                  <div className="text-xs font-semibold text-purple-900">ตัวอย่างการแสดงผล:</div>
+                  <div className="text-sm font-bold text-gray-800">
+                    {catIconInput || '📦'} {catNameInput || '(ชื่อหมวดหมู่)'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2.5 pt-3 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-xl font-medium text-xs hover:bg-gray-100 transition cursor-pointer"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveCategory}
+                className="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition-all cursor-pointer active:scale-95"
+              >
+                {editingCategory ? 'บันทึกการแก้ไข' : 'บันทึกหมวดหมู่ใหม่'}
+              </button>
             </div>
           </div>
         </div>

@@ -105,7 +105,8 @@ export const ShopCatalogView: React.FC<ShopCatalogViewProps> = ({
                 alt={prod.name}
                 className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                 onError={(e) => {
-                  (e.target as HTMLElement).style.display = 'none';
+                  (e.currentTarget as HTMLImageElement).src =
+                    'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=500&auto=format&fit=crop&q=80';
                 }}
               />
               {prod.discountPercent > 0 && (

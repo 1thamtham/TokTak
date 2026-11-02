@@ -42,17 +42,35 @@ export const VideoItem: React.FC<VideoItemProps> = ({
   const clickTimerRef = useRef<NodeJS.Timeout | null>(null);
   const [videoError, setVideoError] = useState<boolean>(false);
 
-  // Play/pause control based on active state
+  const isImagePost = Boolean(
+    clip.videoUrl.startsWith('data:image/') ||
+    clip.videoUrl.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) ||
+    (clip.posterUrl && clip.posterUrl === clip.videoUrl && !clip.videoUrl.match(/\.(mp4|webm|mov|ogg)($|\?)/i))
+  );
+
+  // Play/pause control based on active state and video source
   useEffect(() => {
-    if (!videoRef.current) return;
+    if (!videoRef.current || isImagePost) return;
+    setVideoError(false);
 
     if (isActive) {
+      if (videoRef.current.readyState < 1) {
+        videoRef.current.load();
+      }
+      videoRef.current.muted = isMuted;
       const playPromise = videoRef.current.play();
       if (playPromise !== undefined) {
         playPromise
           .then(() => setIsPlaying(true))
           .catch(() => {
-            setIsPlaying(false);
+            // If browser blocks unmuted autoplay, retry with muted
+            if (videoRef.current) {
+              videoRef.current.muted = true;
+              videoRef.current
+                .play()
+                .then(() => setIsPlaying(true))
+                .catch(() => setIsPlaying(false));
+            }
           });
       }
     } else {
@@ -60,7 +78,7 @@ export const VideoItem: React.FC<VideoItemProps> = ({
       videoRef.current.currentTime = 0;
       setIsPlaying(false);
     }
-  }, [isActive]);
+  }, [isActive, clip.videoUrl, isImagePost]);
 
   const handleTimeUpdate = () => {
     if (!videoRef.current) return;
@@ -92,7 +110,7 @@ export const VideoItem: React.FC<VideoItemProps> = ({
     } else {
       // Single tap -> toggle play/pause
       clickTimerRef.current = setTimeout(() => {
-        if (!videoRef.current) return;
+        if (!videoRef.current || isImagePost) return;
         if (videoRef.current.paused) {
           videoRef.current.play();
           setIsPlaying(true);
@@ -109,39 +127,80 @@ export const VideoItem: React.FC<VideoItemProps> = ({
 
   return (
     <div className="relative w-full h-full snap-start snap-always shrink-0 overflow-hidden bg-black flex flex-col justify-between select-none">
-      {/* 1. วิดีโอพื้นหลัง (พร้อมเลเยอร์ bg-black/30) */}
+      {/* 1. สื่อพื้นหลัง (วิดีโอ <video> หรือรูปภาพ <image>) พร้อมเลเยอร์ bg-black/30 */}
       <div
         className="absolute inset-0 z-0 cursor-pointer overflow-hidden"
         onClick={handleVideoAreaClick}
       >
-        <video
-          ref={videoRef}
-          src={clip.videoUrl}
-          poster={clip.posterUrl || clip.product?.imageUrl}
-          loop
-          playsInline
-          muted={isMuted}
-          onTimeUpdate={handleTimeUpdate}
-          onError={() => setVideoError(true)}
-          className="w-full h-full object-cover"
-        />
+        {isImagePost ? (
+          <img
+            src={clip.videoUrl}
+            alt={clip.caption}
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).src =
+                clip.posterUrl ||
+                'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=800&auto=format&fit=crop&q=80';
+            }}
+            className="w-full h-full object-cover select-none pointer-events-none"
+          />
+        ) : (
+          <video
+            ref={videoRef}
+            src={clip.videoUrl}
+            poster={clip.posterUrl || clip.product?.imageUrl}
+            loop
+            playsInline
+            muted={isMuted}
+            autoPlay={isActive}
+            preload="auto"
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedData={() => {
+              setVideoError(false);
+              if (isActive && videoRef.current) {
+                videoRef.current
+                  .play()
+                  .then(() => setIsPlaying(true))
+                  .catch(() => {
+                    if (videoRef.current) {
+                      videoRef.current.muted = true;
+                      videoRef.current
+                        .play()
+                        .then(() => setIsPlaying(true))
+                        .catch(() => setIsPlaying(false));
+                    }
+                  });
+              }
+            }}
+            onError={() => {
+              // Keep <video> tag mounted and active, do not replace with <img>
+              setVideoError(true);
+            }}
+            className="w-full h-full object-cover"
+          >
+            <source src={clip.videoUrl} type="video/mp4" />
+          </video>
+        )}
 
         {/* Video darken scrim layer */}
-        <div className="absolute inset-0 bg-black/30 pointer-events-none" />
+        <div className="absolute inset-0 bg-black/25 pointer-events-none" />
 
-        {/* Fallback image if video encounters error */}
-        {videoError && (
-          <div className="absolute inset-0 z-0">
-            {clip.product?.imageUrl || clip.posterUrl ? (
-              <img
-                src={clip.product?.imageUrl || clip.posterUrl}
-                alt={clip.caption}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <div className={`w-full h-full bg-gradient-to-br ${clip.fallbackGradient || 'from-zinc-900 to-black'}`} />
-            )}
-            <div className="absolute inset-0 bg-black/40" />
+        {/* Video Status / Quick Retry Pill (keeps <video> tag playing and mounted) */}
+        {!isImagePost && videoError && (
+          <div className="absolute top-20 inset-x-4 z-20 pointer-events-auto flex justify-center">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setVideoError(false);
+                if (videoRef.current) {
+                  videoRef.current.load();
+                  videoRef.current.play().then(() => setIsPlaying(true)).catch(() => {});
+                }
+              }}
+              className="px-3.5 py-1.5 rounded-full bg-black/80 border border-white/20 text-white text-xs font-semibold backdrop-blur-md shadow-lg flex items-center gap-1.5 hover:bg-zinc-800 transition-all cursor-pointer"
+            >
+              <span>🔄 แตะเพื่อโหลดวิดีโอ &lt;video&gt; ใหม่อีกครั้ง</span>
+            </button>
           </div>
         )}
 

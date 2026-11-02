@@ -1,0 +1,632 @@
+import React, { useState, useEffect } from 'react';
+
+interface Category {
+  id: string;
+  name: string;
+  icon: string;
+}
+
+interface Product {
+  id: string;
+  name: string;
+  categoryId: string;
+  price: number;
+  stock: number;
+}
+
+const DEFAULT_CATEGORIES: Category[] = [
+  { id: 'CAT01', name: 'เสื้อผ้าและแฟชั่น', icon: '👕' },
+  { id: 'CAT02', name: 'ความงามและของใช้ส่วนตัว', icon: '💄' },
+  { id: 'CAT03', name: 'อาหารและเครื่องดื่ม', icon: '🍜' },
+  { id: 'CAT04', name: 'โทรศัพท์และอิเล็กทรอนิกส์', icon: '📱' },
+  { id: 'CAT05', name: 'ของใช้ในบ้านและเฟอร์นิเจอร์', icon: '🛋️' },
+  { id: 'CAT06', name: 'เครื่องใช้ไฟฟ้าในบ้าน', icon: '🔌' },
+  { id: 'CAT07', name: 'สุขภาพและอาหารเสริม', icon: '💊' },
+  { id: 'CAT08', name: 'แม่และเด็ก', icon: '🍼' },
+  { id: 'CAT09', name: 'สัตว์เลี้ยง', icon: '🐾' },
+  { id: 'CAT10', name: 'กีฬาและกิจกรรมกลางแจ้ง', icon: '⚽' },
+  { id: 'CAT11', name: 'กระเป๋า รองเท้า และเครื่องประดับ', icon: '👟' },
+  { id: 'CAT12', name: 'ยานยนต์และอุปกรณ์เสริม', icon: '🚗' },
+];
+
+// คลังคำศัพท์อัจฉริยะสำหรับตรวจจับหมวดหมู่อัตโนมัติจากชื่อสินค้า
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  CAT01: ['เสื้อ', 'กางเกง', 'กระโปรง', 'ชุด', 'เดรส', 'ยีนส์', 'แฟชั่น', 'ฮู้ด', 'สเวตเตอร์', 'สูท', 'ผ้าฝ้าย', 'cotton', 'เชิ้ต', 'โอเวอร์ไซส์'],
+  CAT02: ['เซรั่ม', 'ครีม', 'ลิป', 'แป้ง', 'สบู่', 'แชมพู', 'น้ำหอม', 'กันแดด', 'มาสคาร่า', 'โฟมล้างหน้า', 'โลชั่น', 'สกินแคร์', 'ผิว', 'สิว', 'แต่งหน้า'],
+  CAT03: ['ขนม', 'อาหาร', 'กาแฟ', 'ชา', 'น้ำพริก', 'ช็อกโกแลต', 'ทุเรียน', 'หมูหยอง', 'คุกกี้', 'เครื่องดื่ม', 'มาม่า', 'กรอบ', 'อร่อย', 'ผลไม้'],
+  CAT04: ['มือถือ', 'โทรศัพท์', 'เคส', 'สายชาร์จ', 'หูฟัง', 'พาวเวอร์แบงค์', 'ลำโพง', 'บลูทูธ', 'คอมพิวเตอร์', 'เมาส์', 'คีย์บอร์ด', 'ไอโฟน', 'ipad', 'ฟิล์ม'],
+  CAT05: ['โต๊ะ', 'เก้าอี้', 'โซฟา', 'ที่นอน', 'หมอน', 'ผ้าห่ม', 'ผ้าม่าน', 'ชั้นวาง', 'กล่องเก็บของ', 'จาน', 'ชาม', 'กระทะ', 'หม้อ', 'แก้วเก็บความเย็น'],
+  CAT06: ['พัดลม', 'แอร์', 'ทีวี', 'ตู้เย็น', 'เครื่องซักผ้า', 'หม้อทอด', 'เตารีด', 'ไดร์เป่าผม', 'เครื่องดูดฝุ่น', 'ไมโครเวฟ', 'เครื่องปั่น'],
+  CAT07: ['วิตามิน', 'คอลลาเจน', 'เวย์', 'โปรตีน', 'อาหารเสริม', 'สมุนไพร', 'ยาดม', 'หน้ากากอนามัย', 'ลดน้ำหนัก', 'ดีท็อกซ์', 'กลูต้า'],
+  CAT08: ['ผ้าอ้อม', 'แพมเพิส', 'ขวดนม', 'ของเล่นเด็ก', 'รถเข็นเด็ก', 'เสื้อผ้าเด็ก', 'นมผง', 'แม่และเด็ก', 'ทารก'],
+  CAT09: ['แมว', 'หมา', 'สุนัข', 'อาหารแมว', 'อาหารหมา', 'ทรายแมว', 'ปลอกคอ', 'คอนโดแมว', 'ขนมแมวเลีย', 'สัตว์เลี้ยง'],
+  CAT10: ['รองเท้าวิ่ง', 'ดัมเบล', 'เสื่อโยคะ', 'เต็นท์', 'แคมป์ปิ้ง', 'จักรยาน', 'ลูกบอล', 'ออกกำลังกาย', 'ชุดกีฬา', 'ฟิตเนส'],
+  CAT11: ['กระเป๋า', 'รองเท้า', 'นาฬิกา', 'แว่นตา', 'สร้อย', 'แหวน', 'ต่างหู', 'กำไล', 'หมวก', 'เข็มขัด', 'ผ้าใบ', 'ส้นสูง'],
+  CAT12: ['รถยนต์', 'มอเตอร์ไซค์', 'หมวกกันน็อค', 'น้ำหอมรถยนต์', 'กล้องติดรถยนต์', 'ยางรถยนต์', 'แชมพูล้างรถ', 'ที่วางมือถือในรถ'],
+};
+
+export default function AdminDashboard() {
+  const [activeTab, setActiveTab] = useState<'all' | 'categories' | 'products' | 'videos'>('all');
+
+  // โหลดหมวดหมู่จาก LocalStorage เพื่อให้ซิงค์กับหน้าร้านค้าอัตโนมัติ
+  const [categories, setCategories] = useState<Category[]>(() => {
+    const saved = localStorage.getItem('tiktok_shop_categories');
+    return saved ? JSON.parse(saved) : DEFAULT_CATEGORIES;
+  });
+
+  // โหลดสินค้าจาก LocalStorage
+  const [products, setProducts] = useState<Product[]>(() => {
+    const saved = localStorage.getItem('tiktok_shop_products');
+    return saved
+      ? JSON.parse(saved)
+      : [
+          { id: 'P001', name: 'เสื้อยืดพรีเมียม 100% Cotton (สีขาว)', categoryId: 'CAT01', price: 350, stock: 100 },
+          { id: 'P002', name: 'เซรั่มบำรุงผิวหน้าสูตรเข้มข้น', categoryId: 'CAT02', price: 590, stock: 50 },
+        ];
+  });
+
+  // บันทึกลง LocalStorage ทันทีเมื่อข้อมูลเปลี่ยน
+  useEffect(() => {
+    localStorage.setItem('tiktok_shop_categories', JSON.stringify(categories));
+  }, [categories]);
+
+  useEffect(() => {
+    localStorage.setItem('tiktok_shop_products', JSON.stringify(products));
+  }, [products]);
+
+  // State สำหรับ Modal เพิ่มสินค้า
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [newSku, setNewSku] = useState('P003');
+  const [newName, setNewName] = useState('');
+  const [newCategoryId, setNewCategoryId] = useState('CAT01');
+  const [newPrice, setNewPrice] = useState('');
+  const [newStock, setNewStock] = useState('50');
+  const [autoMatchedCat, setAutoMatchedCat] = useState<string | null>(null);
+
+  // State สำหรับเพิ่มหมวดหมู่ด่วนในหน้าเพิ่มสินค้า
+  const [isQuickAddCat, setIsQuickAddCat] = useState(false);
+  const [quickCatName, setQuickCatName] = useState('');
+  const [quickCatIcon, setQuickCatIcon] = useState('📦');
+
+  // State สำหรับจัดการหมวดหมู่หลักหลังบ้าน
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<Category | null>(null);
+  const [catNameInput, setCatNameInput] = useState('');
+  const [catIconInput, setCatIconInput] = useState('🛍️');
+
+  // ฟังก์ชันอัจฉริยะ: วิเคราะห์ชื่อสินค้าแล้วเลือกหมวดหมู่ให้อัตโนมัติทันทีที่พิมพ์
+  const handleProductNameChange = (nameValue: string) => {
+    setNewName(nameValue);
+    const lowerText = nameValue.toLowerCase();
+
+    if (!lowerText.trim()) {
+      setAutoMatchedCat(null);
+      return;
+    }
+
+    // 1. ค้นหาจากคลังคำศัพท์หมวดหมู่มาตรฐาน
+    for (const [catId, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+      if (keywords.some((kw) => lowerText.includes(kw.toLowerCase()))) {
+        if (categories.some((c) => c.id === catId)) {
+          setNewCategoryId(catId);
+          setAutoMatchedCat(catId);
+          return;
+        }
+      }
+    }
+
+    // 2. ค้นหาจากชื่อหมวดหมู่ที่สร้างเพิ่มใหม่เอง
+    for (const cat of categories) {
+      if (lowerText.includes(cat.name.toLowerCase())) {
+        setNewCategoryId(cat.id);
+        setAutoMatchedCat(cat.id);
+        return;
+      }
+    }
+
+    setAutoMatchedCat(null);
+  };
+
+  const getCategoryDisplay = (catId: string) => {
+    const found = categories.find((c) => c.id === catId);
+    return found ? `${found.icon} ${found.name}` : 'ไม่ระบุหมวดหมู่';
+  };
+
+  const handleSaveProduct = () => {
+    if (!newName || !newPrice) {
+      alert('กรุณากรอกชื่อสินค้าและราคาให้ครบถ้วนครับ');
+      return;
+    }
+    const nextNum = products.length + 1;
+    setProducts([
+      ...products,
+      {
+        id: newSku,
+        name: newName,
+        categoryId: newCategoryId,
+        price: Number(newPrice),
+        stock: Number(newStock),
+      },
+    ]);
+    setIsProductModalOpen(false);
+    setNewSku(`P${String(nextNum + 1).padStart(3, '0')}`);
+    setNewName('');
+    setNewPrice('');
+    setAutoMatchedCat(null);
+    alert('บันทึกสินค้าและจัดเข้าหมวดหมู่อัตโนมัติเรียบร้อย!');
+  };
+
+  const handleQuickAddCategory = () => {
+    if (!quickCatName.trim()) {
+      alert('กรุณาใส่ชื่อหมวดหมู่ครับ');
+      return;
+    }
+    const newId = `CAT${String(categories.length + 1).padStart(2, '0')}`;
+    const newCat: Category = { id: newId, name: quickCatName.trim(), icon: quickCatIcon || '📦' };
+    setCategories([...categories, newCat]);
+    setNewCategoryId(newId);
+    setAutoMatchedCat(newId);
+    setQuickCatName('');
+    setIsQuickAddCat(false);
+  };
+
+  const openAddCategoryModal = () => {
+    setEditingCategory(null);
+    setCatNameInput('');
+    setCatIconInput('🛍️');
+    setIsCategoryModalOpen(true);
+  };
+
+  const openEditCategoryModal = (cat: Category) => {
+    setEditingCategory(cat);
+    setCatNameInput(cat.name);
+    setCatIconInput(cat.icon);
+    setIsCategoryModalOpen(true);
+  };
+
+  const handleSaveCategory = () => {
+    if (!catNameInput.trim()) {
+      alert('กรุณากรอกชื่อหมวดหมู่ครับ');
+      return;
+    }
+    if (editingCategory) {
+      setCategories(
+        categories.map((c) =>
+          c.id === editingCategory.id ? { ...c, name: catNameInput.trim(), icon: catIconInput } : c
+        )
+      );
+    } else {
+      const newId = `CAT${String(categories.length + 1).padStart(2, '0')}`;
+      setCategories([...categories, { id: newId, name: catNameInput.trim(), icon: catIconInput }]);
+    }
+    setIsCategoryModalOpen(false);
+  };
+
+  const handleDeleteCategory = (catId: string) => {
+    if (categories.length <= 1) {
+      alert('ต้องมีหมวดหมู่อย่างน้อย 1 หมวดหมู่ในระบบครับ');
+      return;
+    }
+    if (window.confirm('คุณต้องการลบหมวดหมู่นี้ใช่หรือไม่?')) {
+      setCategories(categories.filter((c) => c.id !== catId));
+    }
+  };
+
+  return (
+    <div className="flex h-screen bg-gray-100 font-sans overflow-hidden">
+      {/* Sidebar แถบเมนูด้านซ้าย */}
+      <aside className="w-64 bg-white shadow-md hidden md:block">
+        <div className="p-6">
+          <h1 className="text-xl font-bold text-purple-600">🛠️ Seller Center</h1>
+          <p className="text-xs text-gray-400 mt-1">ระบบจัดการหลังบ้านอัจฉริยะ</p>
+        </div>
+        <nav className="mt-4 space-y-1 px-4">
+          <button
+            onClick={() => setActiveTab('all')}
+            className={`w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-lg ${
+              activeTab === 'all' ? 'bg-purple-50 text-purple-700' : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            📊 ภาพรวมระบบ
+          </button>
+          <button
+            onClick={() => setActiveTab('categories')}
+            className={`w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-lg ${
+              activeTab === 'categories' ? 'bg-purple-50 text-purple-700' : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            📂 จัดการหมวดหมู่ (TikTok)
+          </button>
+          <button
+            onClick={() => setActiveTab('products')}
+            className={`w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-lg ${
+              activeTab === 'products' ? 'bg-purple-50 text-purple-700' : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            👕 จัดการสินค้าและรหัส
+          </button>
+          <button
+            onClick={() => setActiveTab('videos')}
+            className={`w-full flex items-center px-4 py-2.5 text-sm font-medium rounded-lg ${
+              activeTab === 'videos' ? 'bg-purple-50 text-purple-700' : 'text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            🎬 สร้างและลงคลิปวิดีโอ
+          </button>
+          <a
+            href="/"
+            className="flex items-center px-4 py-2.5 text-sm font-medium rounded-lg text-red-600 hover:bg-red-50 mt-10"
+          >
+            🚪 กลับหน้าหลักเว็บไซต์
+          </a>
+        </nav>
+      </aside>
+
+      {/* Main Content ส่วนเนื้อหาหลัก */}
+      <main className="flex-1 overflow-y-auto p-8 space-y-8">
+        <header className="flex justify-between items-center">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-800">ระบบจัดการหลังบ้านร้านค้า</h2>
+            <p className="text-sm text-gray-500">
+              มาพร้อมระบบ AI จับคู่หมวดหมู่สินค้าอัตโนมัติ และซิงค์ข้อมูลเชื่อมหน้าร้านทันที
+            </p>
+          </div>
+          <div className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium">
+            สถานะ: แอดมินออนไลน์
+          </div>
+        </header>
+
+        {/* ส่วนจัดการหมวดหมู่สินค้าหลังบ้าน */}
+        {(activeTab === 'all' || activeTab === 'categories') && (
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800">📂 หมวดหมู่สินค้ามาตรฐาน (TikTok Shop Categories)</h3>
+                <p className="text-xs text-gray-400">
+                  หมวดหมู่ทั้งหมดถูกบันทึกอัตโนมัติ และเชื่อมโยงกับระบบคัดแยกสินค้าอัจฉริยะ
+                </p>
+              </div>
+              <button
+                onClick={openAddCategoryModal}
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition"
+              >
+                + เพิ่มหมวดหมู่ใหม่
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+              {categories.map((cat) => {
+                const count = products.filter((p) => p.categoryId === cat.id).length;
+                return (
+                  <div
+                    key={cat.id}
+                    className="border border-gray-200 rounded-xl p-3.5 flex items-center justify-between hover:border-purple-300 hover:bg-purple-50/30 transition"
+                  >
+                    <div className="flex items-center gap-3 overflow-hidden">
+                      <span className="text-2xl bg-gray-100 p-2 rounded-lg">{cat.icon}</span>
+                      <div className="truncate">
+                        <p className="text-sm font-bold text-gray-800 truncate">{cat.name}</p>
+                        <p className="text-xs text-gray-400">
+                          รหัส {cat.id} • {count} สินค้า
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 ml-2 shrink-0">
+                      <button
+                        onClick={() => openEditCategoryModal(cat)}
+                        className="text-xs text-blue-600 hover:bg-blue-50 px-2 py-1 rounded font-medium"
+                      >
+                        แก้ไข
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCategory(cat.id)}
+                        className="text-xs text-red-500 hover:bg-red-50 px-2 py-1 rounded font-medium"
+                      >
+                        ลบ
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ส่วนจัดการสินค้าและรหัส SKU */}
+        {(activeTab === 'all' || activeTab === 'products') && (
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="flex justify-between items-center mb-6">
+              <div>
+                <h3 className="text-lg font-bold text-gray-800">👕 รายการสินค้าและรหัส SKU</h3>
+                <p className="text-xs text-gray-400">
+                  เมื่อเพิ่มสินค้าใหม่ ระบบจะวิเคราะห์ชื่อสินค้าและจัดเข้าหมวดหมู่ให้อัตโนมัติ
+                </p>
+              </div>
+              <button
+                onClick={() => setIsProductModalOpen(true)}
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 transition"
+              >
+                + เพิ่มสินค้าใหม่ (Auto-Category)
+              </button>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b text-sm text-gray-400">
+                    <th className="py-3 px-4">รหัส SKU</th>
+                    <th className="py-3 px-4">ชื่อสินค้า</th>
+                    <th className="py-3 px-4">หมวดหมู่</th>
+                    <th className="py-3 px-4">ราคา (บาท)</th>
+                    <th className="py-3 px-4">สต็อก</th>
+                  </tr>
+                </thead>
+                <tbody className="text-sm text-gray-600">
+                  {products.map((p, index) => (
+                    <tr key={index} className="border-b hover:bg-gray-50">
+                      <td className="py-3 px-4 font-bold text-purple-600">{p.id}</td>
+                      <td className="py-3 px-4 font-medium text-gray-800">{p.name}</td>
+                      <td className="py-3 px-4">
+                        <span className="bg-purple-50 text-purple-700 px-2.5 py-1 rounded-full text-xs font-medium">
+                          {getCategoryDisplay(p.categoryId)}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4">{p.price.toLocaleString()}</td>
+                      <td className="py-3 px-4">{p.stock}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ส่วนสร้างและอัปโหลดคลิปวิดีโอสั้น */}
+        {(activeTab === 'all' || activeTab === 'videos') && (
+          <div className="bg-white rounded-xl shadow-sm p-6">
+            <div className="mb-6">
+              <h3 className="text-lg font-bold text-gray-800">🎬 สร้างและอัปโหลดคลิปวิดีโอสั้น (TikTok Feed)</h3>
+              <p className="text-xs text-gray-400">
+                แตะปุ่มเพื่อเลือกวิดีโอจากแกลเลอรี และเลือกสินค้าที่กำหนดรหัสไว้มาปักหมุด
+              </p>
+            </div>
+
+            <div className="bg-gray-50 border border-dashed border-gray-300 rounded-2xl p-6 max-w-xl mx-auto flex flex-col items-center text-center space-y-4">
+              <input type="file" id="galleryInput" accept="video/*" className="hidden" />
+              <div
+                className="w-16 h-16 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center text-2xl mb-3 shadow-sm cursor-pointer hover:scale-105 transition"
+                onClick={() => document.getElementById('galleryInput')?.click()}
+              >
+                📁
+              </div>
+              <h4 className="font-bold text-gray-800 text-base">แตะเพื่อเลือกวิดีโอจากแกลเลอรี</h4>
+              <p className="text-xs text-gray-400">รองรับไฟล์ MP4, MOV</p>
+
+              <div className="w-full text-left space-y-1">
+                <label className="block text-xs font-bold text-gray-600">เลือกสินค้าปักหมุดในคลิป</label>
+                <select className="w-full px-3 py-2 border rounded-xl bg-white text-sm outline-none focus:ring-2 focus:ring-purple-500">
+                  {products.map((p, i) => (
+                    <option key={i} value={p.id}>
+                      {p.id} - {p.name} ({getCategoryDisplay(p.categoryId)}) - {p.price} บาท
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="w-full text-left space-y-1">
+                <label className="block text-xs font-bold text-gray-600">แคปชันวิดีโอ</label>
+                <textarea
+                  rows={2}
+                  placeholder="เขียนแคปชันรีวิวสไตล์คุณ..."
+                  className="w-full px-3 py-2 border rounded-xl bg-white text-sm outline-none focus:ring-2 focus:ring-purple-500"
+                ></textarea>
+              </div>
+
+              <button
+                onClick={() => alert('โพสต์คลิปลงหน้าฟีดเรียบร้อย!')}
+                className="w-full bg-purple-600 text-white py-3 rounded-xl font-bold shadow-md hover:bg-purple-700 transition"
+              >
+                🚀 โพสต์คลิปวิดีโอลงหน้าฟีดทันที
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Modal เพิ่ม/แก้ไขหมวดหมู่หลังบ้าน */}
+      {isCategoryModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl p-6 space-y-4">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h3 className="font-bold text-gray-800">
+                {editingCategory ? '✏️ แก้ไขหมวดหมู่สินค้า' : '📂 เพิ่มหมวดหมู่สินค้าใหม่'}
+              </h3>
+              <button onClick={() => setIsCategoryModalOpen(false)} className="text-gray-400 font-bold text-lg">
+                &times;
+              </button>
+            </div>
+            <div className="space-y-3 text-sm">
+              <div>
+                <label className="block font-medium text-gray-700 mb-1">ไอคอนหมวดหมู่ (Emoji)</label>
+                <input
+                  type="text"
+                  value={catIconInput}
+                  onChange={(e) => setCatIconInput(e.target.value)}
+                  placeholder="เช่น 👕, 💄, 📱"
+                  className="w-full px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              <div>
+                <label className="block font-medium text-gray-700 mb-1">ชื่อหมวดหมู่</label>
+                <input
+                  type="text"
+                  value={catNameInput}
+                  onChange={(e) => setCatNameInput(e.target.value)}
+                  placeholder="เช่น แฟชั่นและเครื่องแต่งกาย..."
+                  className="w-full px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setIsCategoryModalOpen(false)}
+                className="px-4 py-2 border rounded-xl text-gray-600 text-sm"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={handleSaveCategory}
+                className="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold"
+              >
+                บันทึกหมวดหมู่
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal เพิ่มสินค้าใหม่ พร้อมระบบเลือกหมวดหมู่อัตโนมัติ (Smart Auto-Category) */}
+      {isProductModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex justify-center items-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl p-6 space-y-4 my-8">
+            <div className="flex justify-between items-center border-b pb-3">
+              <div>
+                <h3 className="font-bold text-gray-800 text-lg">👕 เพิ่มสินค้าใหม่ลงร้านค้า</h3>
+                <p className="text-xs text-purple-600 font-medium">
+                  ✨ พิมพ์ชื่อสินค้า ระบบจะค้นหาและจับคู่หมวดหมู่ให้อัตโนมัติทันที
+                </p>
+              </div>
+              <button onClick={() => setIsProductModalOpen(false)} className="text-gray-400 font-bold text-xl">
+                &times;
+              </button>
+            </div>
+
+            <div className="space-y-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-medium text-gray-700 mb-1">รหัสสินค้า (SKU)</label>
+                  <input
+                    type="text"
+                    value={newSku}
+                    onChange={(e) => setNewSku(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-xl outline-none bg-gray-50"
+                  />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="block font-medium text-gray-700 mb-1">ชื่อสินค้า (พิมพ์เพื่อจับคู่หมวดหมู่) *</label>
+                  <input
+                    type="text"
+                    placeholder="ลองพิมพ์ เช่น ลิปสติก, หูฟังบลูทูธ, อาหารแมว..."
+                    value={newName}
+                    onChange={(e) => handleProductNameChange(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+
+              {/* ช่อง Dropdown หมวดหมู่ ที่เปลี่ยนอัตโนมัติตามชื่อสินค้า */}
+              <div className="bg-purple-50/60 p-3.5 rounded-xl border border-purple-100 space-y-2">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <label className="block font-semibold text-gray-700">หมวดหมู่สินค้า</label>
+                    {autoMatchedCat && (
+                      <span className="bg-green-100 text-green-700 text-xs px-2 py-0.5 rounded-full font-bold">
+                        ✨ เลือกอัตโนมัติจากชื่อสินค้าแล้ว
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickAddCat(!isQuickAddCat)}
+                    className="text-xs text-purple-600 font-bold hover:underline"
+                  >
+                    {isQuickAddCat ? '✕ ปิดช่องเพิ่มด่วน' : '+ เพิ่มหมวดหมู่ใหม่ด่วน'}
+                  </button>
+                </div>
+
+                <select
+                  value={newCategoryId}
+                  onChange={(e) => {
+                    setNewCategoryId(e.target.value);
+                    setAutoMatchedCat(null);
+                  }}
+                  className="w-full px-3 py-2.5 border rounded-xl bg-white outline-none focus:ring-2 focus:ring-purple-500 font-medium text-gray-700"
+                >
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.icon} {cat.name} ({cat.id})
+                    </option>
+                  ))}
+                </select>
+
+                {/* กล่องเพิ่มหมวดหมู่ด่วน */}
+                {isQuickAddCat && (
+                  <div className="pt-2 flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={quickCatIcon}
+                      onChange={(e) => setQuickCatIcon(e.target.value)}
+                      className="w-12 px-2 py-1.5 border rounded-lg bg-white text-center"
+                      placeholder="📦"
+                    />
+                    <input
+                      type="text"
+                      value={quickCatName}
+                      onChange={(e) => setQuickCatName(e.target.value)}
+                      placeholder="พิมพ์ชื่อหมวดหมู่ใหม่..."
+                      className="flex-1 px-3 py-1.5 border rounded-lg bg-white outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleQuickAddCategory}
+                      className="bg-purple-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shrink-0"
+                    >
+                      บันทึก
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-medium text-gray-700 mb-1">ราคาขาย (บาท) *</label>
+                  <input
+                    type="number"
+                    placeholder="390"
+                    value={newPrice}
+                    onChange={(e) => setNewPrice(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-medium text-gray-700 mb-1">จำนวนสต็อก</label>
+                  <input
+                    type="number"
+                    placeholder="100"
+                    value={newStock}
+                    onChange={(e) => setNewStock(e.target.value)}
+                    className="w-full px-3 py-2 border rounded-xl outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-4 border-t">
+              <button
+                onClick={() => setIsProductModalOpen(false)}
+                className="px-4 py-2 border rounded-xl text-gray-600 text-sm"
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={handleSaveProduct}
+                className="px-5 py-2 bg-purple-600 text-white rounded-xl text-sm font-bold shadow-md hover:bg-purple-700"
+              >
+                บันทึกสินค้า
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

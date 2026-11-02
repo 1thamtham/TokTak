@@ -471,12 +471,27 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                         }}
                         className="group relative aspect-[9/14] bg-zinc-900 rounded-xl overflow-hidden cursor-pointer border border-zinc-800 hover:border-purple-500 transition-all shadow-md select-none"
                       >
-                        <video
-                          src={vid.videoUrl}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
-                          muted
-                          playsInline
-                        />
+                        {vid.videoUrl.match(/\.(jpeg|jpg|gif|png|webp)($|\?)/i) || vid.videoUrl.startsWith('data:image/') ? (
+                          <img
+                            src={vid.videoUrl}
+                            alt={vid.caption}
+                            onError={(e) => {
+                              (e.currentTarget as HTMLImageElement).src =
+                                vid.posterUrl ||
+                                'https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&auto=format&fit=crop&q=80';
+                            }}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
+                          />
+                        ) : (
+                          <video
+                            src={vid.videoUrl}
+                            poster={vid.posterUrl || vid.product?.imageUrl}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 pointer-events-none"
+                            muted
+                            playsInline
+                            preload="metadata"
+                          />
+                        )}
                         
                         {/* Pinned Basket Badge on Profile Video Thumbnail */}
                         {vid.product && (

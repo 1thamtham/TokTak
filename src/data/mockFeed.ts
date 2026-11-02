@@ -1,6 +1,80 @@
-import { VideoClip, Product, OrderItem } from '../types/feed';
+import { VideoClip, Product, OrderItem, Category } from '../types/feed';
+
+export const INITIAL_CATEGORIES: Category[] = [
+  { id: 'CAT01', name: 'เสื้อผ้าและแฟชั่น', icon: '👕' },
+  { id: 'CAT02', name: 'ความงามและของใช้ส่วนตัว', icon: '💄' },
+  { id: 'CAT03', name: 'อาหารและเครื่องดื่ม', icon: '🍜' },
+  { id: 'CAT04', name: 'โทรศัพท์และอิเล็กทรอนิกส์', icon: '📱' },
+  { id: 'CAT05', name: 'ของใช้ในบ้านและเฟอร์นิเจอร์', icon: '🛋️' },
+  { id: 'CAT06', name: 'เครื่องใช้ไฟฟ้าในบ้าน', icon: '🔌' },
+  { id: 'CAT07', name: 'สุขภาพและอาหารเสริม', icon: '💊' },
+  { id: 'CAT08', name: 'แม่และเด็ก', icon: '🍼' },
+  { id: 'CAT09', name: 'สัตว์เลี้ยง', icon: '🐾' },
+  { id: 'CAT10', name: 'กีฬาและกิจกรรมกลางแจ้ง', icon: '⚽' },
+  { id: 'CAT11', name: 'กระเป๋า รองเท้า และเครื่องประดับ', icon: '👟' },
+  { id: 'CAT12', name: 'ยานยนต์และอุปกรณ์เสริม', icon: '🚗' },
+];
+
+// คลังคำศัพท์อัจฉริยะสำหรับตรวจจับหมวดหมู่อัตโนมัติจากชื่อสินค้า (Smart Auto-Category)
+export const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  CAT01: ['เสื้อ', 'กางเกง', 'กระโปรง', 'ชุด', 'เดรส', 'ยีนส์', 'แฟชั่น', 'ฮู้ด', 'สเวตเตอร์', 'สูท', 'ผ้าฝ้าย', 'cotton', 'เชิ้ต', 'โอเวอร์ไซส์', 'tee', 'shirt', 'hoodie'],
+  CAT02: ['เซรั่ม', 'ครีม', 'ลิป', 'แป้ง', 'สบู่', 'แชมพู', 'น้ำหอม', 'กันแดด', 'มาสคาร่า', 'โฟมล้างหน้า', 'โลชั่น', 'สกินแคร์', 'ผิว', 'สิว', 'แต่งหน้า', 'บำรุง'],
+  CAT03: ['ขนม', 'อาหาร', 'กาแฟ', 'ชา', 'น้ำพริก', 'ช็อกโกแลต', 'ทุเรียน', 'หมูหยอง', 'คุกกี้', 'เครื่องดื่ม', 'มาม่า', 'กรอบ', 'อร่อย', 'ผลไม้'],
+  CAT04: ['มือถือ', 'โทรศัพท์', 'เคส', 'สายชาร์จ', 'หูฟัง', 'พาวเวอร์แบงค์', 'ลำโพง', 'บลูทูธ', 'คอมพิวเตอร์', 'เมาส์', 'คีย์บอร์ด', 'ไอโฟน', 'ipad', 'ฟิล์ม'],
+  CAT05: ['โต๊ะ', 'เก้าอี้', 'โซฟา', 'ที่นอน', 'หมอน', 'ผ้าห่ม', 'ผ้าม่าน', 'ชั้นวาง', 'กล่องเก็บของ', 'จาน', 'ชาม', 'กระทะ', 'หม้อ', 'แก้วเก็บความเย็น'],
+  CAT06: ['พัดลม', 'แอร์', 'ทีวี', 'ตู้เย็น', 'เครื่องซักผ้า', 'หม้อทอด', 'เตารีด', 'ไดร์เป่าผม', 'เครื่องดูดฝุ่น', 'ไมโครเวฟ', 'เครื่องปั่น'],
+  CAT07: ['วิตามิน', 'คอลลาเจน', 'เวย์', 'โปรตีน', 'อาหารเสริม', 'สมุนไพร', 'ยาดม', 'หน้ากากอนามัย', 'ลดน้ำหนัก', 'ดีท็อกซ์', 'กลูต้า'],
+  CAT08: ['ผ้าอ้อม', 'แพมเพิส', 'ขวดนม', 'ของเล่นเด็ก', 'รถเข็นเด็ก', 'เสื้อผ้าเด็ก', 'นมผง', 'แม่และเด็ก', 'ทารก'],
+  CAT09: ['แมว', 'หมา', 'สุนัข', 'อาหารแมว', 'อาหารหมา', 'ทรายแมว', 'ปลอกคอ', 'คอนโดแมว', 'ขนมแมวเลีย', 'สัตว์เลี้ยง'],
+  CAT10: ['รองเท้าวิ่ง', 'ดัมเบล', 'เสื่อโยคะ', 'เต็นท์', 'แคมป์ปิ้ง', 'จักรยาน', 'ลูกบอล', 'ออกกำลังกาย', 'ชุดกีฬา', 'ฟิตเนส'],
+  CAT11: ['กระเป๋า', 'รองเท้า', 'นาฬิกา', 'แว่นตา', 'สร้อย', 'แหวน', 'ต่างหู', 'กำไล', 'หมวก', 'เข็มขัด', 'ผ้าใบ', 'ส้นสูง'],
+  CAT12: ['รถยนต์', 'มอเตอร์ไซค์', 'หมวกกันน็อค', 'น้ำหอมรถยนต์', 'กล้องติดรถยนต์', 'ยางรถยนต์', 'แชมพูล้างรถ', 'ที่วางมือถือในรถ'],
+};
+
+export const detectCategoryFromName = (
+  nameValue: string,
+  categories: Category[]
+): { categoryId: string; categoryName: string } | null => {
+  const lowerText = nameValue.toLowerCase().trim();
+  if (!lowerText) return null;
+
+  // 1. ค้นหาจากคลังคำศัพท์หมวดหมู่มาตรฐาน
+  for (const [catId, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+    if (keywords.some((kw) => lowerText.includes(kw.toLowerCase()))) {
+      const found = categories.find((c) => c.id === catId);
+      if (found) {
+        return { categoryId: found.id, categoryName: found.name };
+      }
+    }
+  }
+
+  // 2. ค้นหาจากชื่อหมวดหมู่ที่สร้างเพิ่มใหม่เอง
+  for (const cat of categories) {
+    if (lowerText.includes(cat.name.toLowerCase())) {
+      return { categoryId: cat.id, categoryName: cat.name };
+    }
+  }
+
+  return null;
+};
 
 export const INITIAL_PRODUCTS: Product[] = [
+  {
+    id: 'prod-motor-01',
+    code: 'P010',
+    name: 'เสื้อแจ็คเก็ตมอเตอร์ไซค์ Biker Pro Racing Edition (การ์ดแท้ 5 จุด)',
+    price: 1290,
+    originalPrice: 2490,
+    discountPercent: 48,
+    rating: 5.0,
+    salesCount: '2.8k+ ขายแล้ว',
+    stock: 65,
+    category: 'ยานยนต์และอุปกรณ์เสริม',
+    imageUrl: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=500&auto=format&fit=crop&q=80',
+    colors: ['Racing Black', 'Stealth Red', 'Carbon Gray'],
+    sizes: ['M (อก 42")', 'L (อก 44")', 'XL (อก 46")', '2XL (อก 48")'],
+    description: 'เสื้อแจ็คเก็ตขับขี่มอเตอร์ไซค์และการ์ดป้องกันมาตรฐาน CE ซับในระบายอากาศ แถบสะท้อนแสง 3M ปลอดภัยยามค่ำคืน',
+  },
   {
     id: 'prod-p001',
     code: 'P001',
@@ -44,7 +118,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     salesCount: '1.8k+ ขายแล้ว',
     stock: 58,
     category: 'เสื้อยืดกราฟิก',
-    imageUrl: '/src/assets/images/shirt_streetwear_black_1793336644572.jpg',
+    imageUrl: '/images/shirt_streetwear_black_1793336644572.jpg',
     colors: ['Washed Black', 'Onyx Charcoal'],
     sizes: ['M (อก 44")', 'L (อก 48")', 'XL (อก 52")'],
     description: 'เนื้อผ้า Heavy Cotton 240g งานสกรีนพรีเมียมไม่ลอก สีฟอกวินเทจเท่ทรงหล่นไหล่แบบสตรีท',
@@ -60,7 +134,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     salesCount: '3.4k+ ขายแล้ว',
     stock: 94,
     category: 'เสื้อยืดสไตล์ญี่ปุ่น',
-    imageUrl: '/src/assets/images/shirt_cream_minimal_1793336644442.jpg',
+    imageUrl: '/images/shirt_cream_minimal_1793336644442.jpg',
     colors: ['Cream Off-White', 'Stone Grey'],
     sizes: ['S (อก 40")', 'M (อก 44")', 'L (อก 48")', 'XL (อก 52")'],
     description: 'ผ้าฝ้ายทอแน่นสัมผัสนุ่ม ไม่บาง ไม่หดหลังซัก งานพิมพ์ละเอียดสไตล์ภาพพิมพ์ไม้ญี่ปุ่นโบราณ',
@@ -76,7 +150,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     salesCount: '950+ ขายแล้ว',
     stock: 31,
     category: 'เสื้อฟอกวินเทจ',
-    imageUrl: '/src/assets/images/shirt_acidwash_neon_1793336644924.jpg',
+    imageUrl: '/images/shirt_acidwash_neon_1793336644924.jpg',
     colors: ['Charcoal Acid Wash', 'Deep Smoke'],
     sizes: ['M (อก 44")', 'L (อก 48")', 'XL (อก 52")'],
     description: 'เทคนิคฟอกหินแท้ Acid Wash ให้ลายฟอกเฉพาะตัวทุกตัวไม่ซ้ำ ลายกราฟิกสีนีออนคมชัดทนทาน',
@@ -92,7 +166,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     salesCount: '2.1k+ ขายแล้ว',
     stock: 63,
     category: 'เสื้อยืดมอเตอร์สปอร์ต',
-    imageUrl: '/src/assets/images/shirt_vintage_olive_1793336645622.jpg',
+    imageUrl: '/images/shirt_vintage_olive_1793336645622.jpg',
     colors: ['Mineral Olive', 'Vintage Desert Sand'],
     sizes: ['S (อก 40")', 'M (อก 44")', 'L (อก 48")', 'XL (อก 52")'],
     description: 'สไตล์อเมริกันวินเทจมอเตอร์สปอร์ต ดีเทลสกรีนแตกลายงาแบบดั้งเดิม คอเสื้อทอหนาไม่ม้วนย้วย',
@@ -125,7 +199,7 @@ export const INITIAL_ORDERS: OrderItem[] = [
     address: '99/12 หมู่บ้านสุขสราญ ถ.สุขุมวิท เขตคลองเตย กทม. 10110',
     productId: 'prod-cyber-tee',
     productName: 'P003 - Cybernetic Nostalgia Oversized Tee (ฟอกดำ)',
-    productImage: '/src/assets/images/shirt_streetwear_black_1793336644572.jpg',
+    productImage: '/images/shirt_streetwear_black_1793336644572.jpg',
     size: 'XL (อก 52")',
     color: 'Washed Black',
     quantity: 1,
@@ -143,7 +217,7 @@ export const INITIAL_ORDERS: OrderItem[] = [
     address: '54 ซอยอารีย์สัมพันธ์ แขวงสามเสนใน เขตพญาไท กทม. 10400',
     productId: 'prod-wave-tee',
     productName: 'P004 - Japanese Great Wave Heavyweight Tee (สีครีม)',
-    productImage: '/src/assets/images/shirt_cream_minimal_1793336644442.jpg',
+    productImage: '/images/shirt_cream_minimal_1793336644442.jpg',
     size: 'M (อก 44")',
     color: 'Cream Off-White',
     quantity: 1,
@@ -161,7 +235,7 @@ export const INITIAL_ORDERS: OrderItem[] = [
     address: '88 ถ.เชียงใหม่-ลำปาง ต.ช้างเผือก อ.เมือง จ.เชียงใหม่ 50300',
     productId: 'prod-moto-tee',
     productName: 'P006 - Apex & Grit Vintage Motorcycle Rally Tee',
-    productImage: '/src/assets/images/shirt_vintage_olive_1793336645622.jpg',
+    productImage: '/images/shirt_vintage_olive_1793336645622.jpg',
     size: 'L (อก 48")',
     color: 'Mineral Olive',
     quantity: 2,
@@ -179,7 +253,7 @@ export const INITIAL_ORDERS: OrderItem[] = [
     address: '15/2 หมู่ 3 ต.บางกระสอ อ.เมือง จ.นนทบุรี 11000',
     productId: 'prod-neon-tee',
     productName: 'P005 - Neon Wasteland 90s Acid Wash Graphic Tee',
-    productImage: '/src/assets/images/shirt_acidwash_neon_1793336644924.jpg',
+    productImage: '/images/shirt_acidwash_neon_1793336644924.jpg',
     size: 'L (อก 48")',
     color: 'Charcoal Acid Wash',
     quantity: 1,
@@ -194,8 +268,78 @@ export const INITIAL_ORDERS: OrderItem[] = [
 
 export const INITIAL_VIDEOS: VideoClip[] = [
   {
+    id: 'vid-video1-01',
+    videoUrl: '/video1.mp4',
+    posterUrl: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&auto=format&fit=crop&q=80',
+    fallbackGradient: 'from-zinc-950 via-red-950 to-black',
+    creator: {
+      id: 'usr-golden-river',
+      name: 'Golden River City',
+      handle: '@goldenriver_official',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      verified: true,
+      isFollowing: false,
+    },
+    caption: 'วิดีโอแรก video1.mp4 เล่นอัตโนมัติ 🏍️💨 ขับขี่มอเตอร์ไซค์สุดเท่ พร้อมชุดการ์ด Biker Racing Pro การ์ด 5 จุด พิกัดในตระกล้าเลยครับ 🏁',
+    hashtags: ['#video1', '#motor', '#มอเตอร์ไซค์', '#บิ๊กไบค์', '#TikTokShopพิกัดช็อป', '#แต่งรถ'],
+    musicTitle: 'MOTOR SPORT RACING - Original Sound by @goldenriver_official',
+    likesCount: 38400,
+    commentsCount: 526,
+    sharesCount: 2310,
+    savesCount: 4950,
+    isLiked: false,
+    isSaved: false,
+    product: INITIAL_PRODUCTS[0],
+    comments: [
+      {
+        id: 'c-m1',
+        username: 'rider_bkk',
+        avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80',
+        text: 'คลิป video1.mp4 ชัดและเล่นอัตโนมัติลื่นไหลมากกก แจ็คเก็ตเท่สุดๆ มีการ์ดป้องกันแท้ไหมครับ',
+        timeAgo: '1 ชม. ที่แล้ว',
+        likes: 89,
+        isLiked: false,
+      },
+      {
+        id: 'c-m2',
+        username: 'speed_hunter',
+        avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=100&auto=format&fit=crop&q=80',
+        text: 'สั่งไปแล้วครับ พิกัดตระกล้าส่งไวมาก ขอบคุณครับ 🏍️🔥',
+        timeAgo: '3 ชม. ที่แล้ว',
+        likes: 34,
+        isLiked: true,
+      },
+    ],
+  },
+  {
+    id: 'vid-motor-02',
+    videoUrl: '/motor.mp4',
+    posterUrl: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=800&auto=format&fit=crop&q=80',
+    fallbackGradient: 'from-zinc-950 via-red-950 to-black',
+    creator: {
+      id: 'usr-golden-river',
+      name: 'Golden River City',
+      handle: '@goldenriver_official',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      verified: true,
+      isFollowing: false,
+    },
+    caption: 'ขับขี่มอเตอร์ไซค์สุดเท่ พร้อมชุดการ์ด Biker Racing Pro และอุปกรณ์ครบเซ็ต 🏍️💨',
+    hashtags: ['#motor', '#มอเตอร์ไซค์', '#บิ๊กไบค์', '#แต่งรถ'],
+    musicTitle: 'MOTOR SPORT RACING - Original Sound by @goldenriver_official',
+    likesCount: 15200,
+    commentsCount: 210,
+    sharesCount: 890,
+    savesCount: 1420,
+    isLiked: false,
+    isSaved: false,
+    product: INITIAL_PRODUCTS[0],
+    comments: [],
+  },
+  {
     id: 'vid-1',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-fashion-model-in-a-neon-illuminated-city-street-41712-large.mp4',
+    videoUrl: '/city.mp4',
+    posterUrl: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&auto=format&fit=crop&q=80',
     fallbackGradient: 'from-slate-900 via-purple-950 to-slate-950',
     creator: {
       id: 'usr-golden-river',
@@ -214,7 +358,7 @@ export const INITIAL_VIDEOS: VideoClip[] = [
     savesCount: 3120,
     isLiked: false,
     isSaved: false,
-    product: INITIAL_PRODUCTS[2],
+    product: INITIAL_PRODUCTS[3],
     comments: [
       {
         id: 'c-1',
@@ -247,7 +391,8 @@ export const INITIAL_VIDEOS: VideoClip[] = [
   },
   {
     id: 'vid-2',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-stylish-young-woman-posing-in-a-neon-illuminated-room-41424-large.mp4',
+    videoUrl: '/flower.mp4',
+    posterUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80',
     fallbackGradient: 'from-amber-950 via-slate-900 to-stone-950',
     creator: {
       id: 'cr-2',
@@ -266,6 +411,7 @@ export const INITIAL_VIDEOS: VideoClip[] = [
     savesCount: 7890,
     isLiked: true,
     isSaved: true,
+    product: INITIAL_PRODUCTS[4],
     comments: [
       {
         id: 'c-4',
@@ -289,7 +435,8 @@ export const INITIAL_VIDEOS: VideoClip[] = [
   },
   {
     id: 'vid-3',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-young-man-skateboarding-in-a-parking-lot-41551-large.mp4',
+    videoUrl: '/city.mp4',
+    posterUrl: 'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8?w=800&auto=format&fit=crop&q=80',
     fallbackGradient: 'from-pink-950 via-slate-900 to-neutral-950',
     creator: {
       id: 'cr-3',
@@ -308,6 +455,7 @@ export const INITIAL_VIDEOS: VideoClip[] = [
     savesCount: 1420,
     isLiked: false,
     isSaved: false,
+    product: INITIAL_PRODUCTS[5],
     comments: [
       {
         id: 'c-6',
@@ -322,7 +470,8 @@ export const INITIAL_VIDEOS: VideoClip[] = [
   },
   {
     id: 'vid-4',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-fashion-model-showing-off-her-urban-outfit-41408-large.mp4',
+    videoUrl: '/motor.mp4',
+    posterUrl: 'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=800&auto=format&fit=crop&q=80',
     fallbackGradient: 'from-emerald-950 via-slate-900 to-zinc-950',
     creator: {
       id: 'cr-4',
@@ -341,6 +490,7 @@ export const INITIAL_VIDEOS: VideoClip[] = [
     savesCount: 4200,
     isLiked: false,
     isSaved: false,
+    product: INITIAL_PRODUCTS[6],
     comments: [
       {
         id: 'c-7',
@@ -355,7 +505,8 @@ export const INITIAL_VIDEOS: VideoClip[] = [
   },
   {
     id: 'vid-5',
-    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-woman-dancing-freestyle-in-a-studio-41407-large.mp4',
+    videoUrl: '/video1.mp4',
+    posterUrl: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=800&auto=format&fit=crop&q=80',
     fallbackGradient: 'from-cyan-950 via-slate-900 to-indigo-950',
     creator: {
       id: 'cr-5',
@@ -374,6 +525,7 @@ export const INITIAL_VIDEOS: VideoClip[] = [
     savesCount: 9150,
     isLiked: false,
     isSaved: false,
+    product: INITIAL_PRODUCTS[1],
     comments: [
       {
         id: 'c-8',

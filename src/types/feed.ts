@@ -1,3 +1,9 @@
+export interface Category {
+  id: string;
+  name: string;
+  icon: string;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -14,6 +20,7 @@ export interface Product {
   code?: string;
   stock?: number;
   category?: string;
+  categoryId?: string;
   weight?: number;
   shippingCarrier?: string;
   fdaNumber?: string;

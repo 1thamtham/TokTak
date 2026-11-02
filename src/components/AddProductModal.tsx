@@ -12,11 +12,14 @@ import {
   Monitor,
   Smartphone,
 } from 'lucide-react';
-import { Product, UserProfile } from '../types/feed';
+import { Product, UserProfile, Category } from '../types/feed';
+import { INITIAL_CATEGORIES, detectCategoryFromName } from '../data/mockFeed';
 
 interface AddProductModalProps {
   isOpen: boolean;
   currentUser: UserProfile;
+  categories?: Category[];
+  onAddCategory?: (cat: Category) => void;
   onClose: () => void;
   onAddProduct: (product: Product) => void;
 }
@@ -47,6 +50,8 @@ const PRESET_PRODUCT_IMAGES = [
 export const AddProductModal: React.FC<AddProductModalProps> = ({
   isOpen,
   currentUser,
+  categories = INITIAL_CATEGORIES,
+  onAddCategory,
   onClose,
   onAddProduct,
 }) => {
@@ -55,7 +60,31 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   const [price, setPrice] = useState('390');
   const [originalPrice, setOriginalPrice] = useState('690');
   const [stock, setStock] = useState('100');
-  const [category, setCategory] = useState('เสื้อยืดกราฟิก & สตรีทแวร์');
+  
+  // Category state
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(
+    categories[0]?.id || 'CAT01'
+  );
+  const [category, setCategory] = useState<string>(
+    categories[0]?.name || 'เสื้อผ้าและแฟชั่น'
+  );
+  const [autoMatchedCat, setAutoMatchedCat] = useState<string | null>(null);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatIcon, setNewCatIcon] = useState('📦');
+
+  // ฟังก์ชันอัจฉริยะ: วิเคราะห์ชื่อสินค้าแล้วเลือกหมวดหมู่ให้อัตโนมัติ (Smart Auto-Category)
+  const handleNameChange = (val: string) => {
+    setName(val);
+    const detected = detectCategoryFromName(val, categories);
+    if (detected) {
+      setSelectedCategoryId(detected.categoryId);
+      setCategory(detected.categoryName);
+      setAutoMatchedCat(detected.categoryId);
+    } else {
+      setAutoMatchedCat(null);
+    }
+  };
   
   // Gallery images & selection
   const [galleryImages, setGalleryImages] = useState<string[]>(
@@ -74,8 +103,40 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
   const [description, setDescription] = useState(
     'ผ้า Cotton 100% หนา 240g งานพิมพ์คุณภาพสูง ทรงโอเวอร์ไซส์ ใส่สบาย ไม่หด ไม่ย้วย'
   );
+  const [productColors, setProductColors] = useState<string[]>(['สีดำ (Black)', 'สีขาว (White)']);
+  const [productSizes, setProductSizes] = useState<string[]>(['S', 'M', 'L', 'XL', 'Oversized']);
+  const [customColorInput, setCustomColorInput] = useState<string>('');
+  const [customSizeInput, setCustomSizeInput] = useState<string>('');
   const [shippingCarrier, setShippingCarrier] = useState('📮 ไปรษณีย์ไทย (EMS ด่วนพิเศษ)');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleToggleColor = (color: string) => {
+    setProductColors((prev) =>
+      prev.includes(color) ? prev.filter((c) => c !== color) : [...prev, color]
+    );
+  };
+
+  const handleToggleSize = (size: string) => {
+    setProductSizes((prev) =>
+      prev.includes(size) ? prev.filter((s) => s !== size) : [...prev, size]
+    );
+  };
+
+  const handleAddCustomColor = () => {
+    const trimmed = customColorInput.trim();
+    if (trimmed && !productColors.includes(trimmed)) {
+      setProductColors((prev) => [...prev, trimmed]);
+      setCustomColorInput('');
+    }
+  };
+
+  const handleAddCustomSize = () => {
+    const trimmed = customSizeInput.trim();
+    if (trimmed && !productSizes.includes(trimmed)) {
+      setProductSizes((prev) => [...prev, trimmed]);
+      setCustomSizeInput('');
+    }
+  };
 
   // Mobile Long-Press handlers
   const handleTouchStart = (index: number, url: string) => {
@@ -146,6 +207,28 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
     e.target.value = '';
   };
 
+  // Quick add category
+  const handleQuickAddCategory = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (!newCatName.trim()) {
+      alert('กรุณากรอกชื่อหมวดหมู่');
+      return;
+    }
+    const newId = `CAT${String(categories.length + 1).padStart(2, '0')}`;
+    const createdCat: Category = {
+      id: newId,
+      name: newCatName.trim(),
+      icon: newCatIcon.trim() || '📦',
+    };
+    if (onAddCategory) {
+      onAddCategory(createdCat);
+    }
+    setSelectedCategoryId(newId);
+    setCategory(createdCat.name);
+    setNewCatName('');
+    setIsQuickAddOpen(false);
+  };
+
   if (!isOpen) return null;
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -175,10 +258,11 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
         salesCount: 'เพิ่งลงขายใหม่',
         stock: Number(stock) || 50,
         category,
+        categoryId: selectedCategoryId,
         imageUrl: primaryImage,
         galleryImages: galleryImages,
-        colors: ['ดำสตรีท (Street Black)', 'ขาวมินิมอล (Minimal White)'],
-        sizes: ['M (อก 44")', 'L (อก 48")', 'XL (อก 52")'],
+        colors: productColors.length > 0 ? productColors : ['สีดำ (Black)', 'สีขาว (White)'],
+        sizes: productSizes.length > 0 ? productSizes : ['S', 'M', 'L', 'XL'],
         description,
         shippingCarrier,
       };
@@ -239,33 +323,103 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
               />
             </div>
             <div>
-              <label className="block font-medium text-zinc-300 mb-1">
-                หมวดหมู่สินค้า
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5">
+                  <label className="block font-medium text-zinc-300">
+                    หมวดหมู่สินค้า *
+                  </label>
+                  {autoMatchedCat && (
+                    <span className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] px-2 py-0.5 rounded-full font-bold inline-flex items-center gap-1 animate-in fade-in">
+                      ✨ เลือกอัตโนมัติแล้ว
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsQuickAddOpen(!isQuickAddOpen)}
+                  className="text-[11px] font-semibold text-purple-400 hover:text-purple-300 transition-colors flex items-center gap-0.5 cursor-pointer"
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>{isQuickAddOpen ? 'ปิด' : 'เพิ่มหมวดหมู่'}</span>
+                </button>
+              </div>
               <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-3 py-2 bg-zinc-950 border border-zinc-700 rounded-xl text-white outline-none focus:border-purple-500"
+                value={selectedCategoryId}
+                onChange={(e) => {
+                  const selId = e.target.value;
+                  setSelectedCategoryId(selId);
+                  setAutoMatchedCat(null);
+                  const found = categories.find((c) => c.id === selId);
+                  if (found) {
+                    setCategory(found.name);
+                  }
+                }}
+                className="w-full px-3 py-2 bg-zinc-950 border border-zinc-700 rounded-xl text-white outline-none focus:border-purple-500 cursor-pointer"
               >
-                <option value="เสื้อยืดกราฟิก & สตรีทแวร์">เสื้อยืดกราฟิก & สตรีทแวร์</option>
-                <option value="เสื้อยืดเบสิก Cotton 100%">เสื้อยืดเบสิก Cotton 100%</option>
-                <option value="เสื้อกันหนาว & ฮู้ดดี้">เสื้อกันหนาว & ฮู้ดดี้</option>
-                <option value="เสื้อวินเทจ & ยุค 90s">เสื้อวินเทจ & ยุค 90s</option>
-                <option value="กางเกง & แอคเซสเซอรี่">กางเกง & แอคเซสเซอรี่</option>
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>
+                    {cat.icon} {cat.name} ({cat.id})
+                  </option>
+                ))}
               </select>
             </div>
           </div>
 
+          {/* กล่องเพิ่มหมวดหมู่ด่วน */}
+          {isQuickAddOpen && (
+            <div className="p-3 bg-purple-950/40 border border-purple-500/40 rounded-2xl space-y-2 animate-in fade-in">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-bold text-purple-200">
+                  ✨ เพิ่มหมวดหมู่ใหม่ลงในระบบหลังบ้าน:
+                </span>
+                <span className="text-[10px] text-zinc-400">
+                  รหัสใหม่: CAT{String(categories.length + 1).padStart(2, '0')}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newCatIcon}
+                  onChange={(e) => setNewCatIcon(e.target.value)}
+                  placeholder="📦"
+                  maxLength={4}
+                  className="w-12 px-2 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-center text-sm outline-none focus:border-purple-400"
+                  title="ไอคอนหมวดหมู่ (Emoji)"
+                />
+                <input
+                  type="text"
+                  value={newCatName}
+                  onChange={(e) => setNewCatName(e.target.value)}
+                  placeholder="เช่น ของเล่น & โมเดลสะสม..."
+                  className="flex-1 px-3 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-white outline-none focus:border-purple-400"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleQuickAddCategory();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleQuickAddCategory}
+                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-lg transition-colors cursor-pointer shrink-0"
+                >
+                  บันทึก
+                </button>
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block font-medium text-zinc-300 mb-1">
-              ชื่อสินค้า (Product Name) *
+              ชื่อสินค้า (พิมพ์เพื่อจับคู่หมวดหมู่อัตโนมัติ) *
             </label>
             <input
               type="text"
               required
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="เช่น Cyber Street Heavyweight Oversized Tee ลายพิเศษ..."
+              onChange={(e) => handleNameChange(e.target.value)}
+              placeholder="ลองพิมพ์ เช่น ลิปสติก, หูฟังบลูทูธ, อาหารแมว, เสื้อยืด..."
               className="w-full px-3 py-2 bg-zinc-950 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 outline-none focus:border-purple-500"
             />
           </div>
@@ -474,6 +628,185 @@ export const AddProductModal: React.FC<AddProductModalProps> = ({
               <option value="⚡ Flash Express (เข้ารับพัสดุถึงบ้าน)">⚡ Flash Express</option>
               <option value="📦 Kerry Express">📦 Kerry Express</option>
             </select>
+          </div>
+
+          {/* Product Options: Colors (สี) and Sizes/Numbers (เบอร์ / ไซส์) */}
+          <div className="bg-zinc-950/80 p-3.5 rounded-2xl border border-zinc-800 space-y-3.5">
+            {/* Color selection */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block font-semibold text-zinc-200 text-xs flex items-center gap-1.5">
+                  <span>🎨 ตัวเลือก สี (Colors)</span>
+                  <span className="text-[10px] text-purple-300 bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-500/30">
+                    เลือกแล้ว {productColors.length} สี
+                  </span>
+                </label>
+                <span className="text-[10px] text-zinc-500">ติ๊กเลือกสี หรือพิมพ์เพิ่มเอง</span>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {[
+                  { name: 'สีดำ (Black)', dot: 'bg-black border border-white/30' },
+                  { name: 'สีขาว (White)', dot: 'bg-white border border-gray-400' },
+                  { name: 'สีเทา (Grey)', dot: 'bg-zinc-500' },
+                  { name: 'สีแดง (Red)', dot: 'bg-red-500' },
+                  { name: 'สีกรม/น้ำเงิน (Navy)', dot: 'bg-blue-800' },
+                  { name: 'สีเขียวโอลีฟ (Olive)', dot: 'bg-emerald-800' },
+                  { name: 'สีครีม/เบจ (Beige)', dot: 'bg-amber-100' },
+                  { name: 'สีชมพู (Pink)', dot: 'bg-pink-400' },
+                  { name: 'สีน้ำตาล (Brown)', dot: 'bg-amber-900' },
+                ].map((col) => (
+                  <label
+                    key={col.name}
+                    className={`flex items-center gap-1.5 border px-2.5 py-1 rounded-lg text-xs cursor-pointer select-none transition-all ${
+                      productColors.includes(col.name)
+                        ? 'bg-purple-900/40 border-purple-400 text-purple-200 font-bold'
+                        : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:bg-zinc-800'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={productColors.includes(col.name)}
+                      onChange={() => handleToggleColor(col.name)}
+                      className="accent-purple-500 cursor-pointer"
+                    />
+                    <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${col.dot}`} />
+                    <span>{col.name}</span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  value={customColorInput}
+                  onChange={(e) => setCustomColorInput(e.target.value)}
+                  placeholder="พิมพ์ชื่อสีที่ต้องการ เช่น ส้มอิฐ, ม่วงพาสเทล..."
+                  className="flex-1 px-3 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-xs text-white placeholder-zinc-500 outline-none focus:border-purple-500"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomColor();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomColor}
+                  className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
+                >
+                  + เพิ่มสี
+                </button>
+              </div>
+            </div>
+
+            <div className="border-t border-zinc-800" />
+
+            {/* Sizes & Numbers selection */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="block font-semibold text-zinc-200 text-xs flex items-center gap-1.5">
+                  <span>📏 ตัวเลือก เบอร์ และ ไซส์ (Sizes & Numbers)</span>
+                  <span className="text-[10px] text-purple-300 bg-purple-950/60 px-2 py-0.5 rounded-full border border-purple-500/30">
+                    เลือกแล้ว {productSizes.length} รายการ
+                  </span>
+                </label>
+                <span className="text-[10px] text-zinc-500">รองรับทั้งเบอร์รองเท้าและไซส์เสื้อ</span>
+              </div>
+
+              {/* Standard Sizes */}
+              <div className="mb-2">
+                <span className="block text-[10px] text-zinc-400 mb-1">
+                  👕 ไซส์มาตรฐาน (เสื้อผ้า):
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {['S', 'M', 'L', 'XL', '2XL', '3XL', 'Oversized', 'Free Size'].map((size) => (
+                    <label
+                      key={size}
+                      className={`flex items-center gap-1 border px-2 py-0.5 rounded-lg text-xs cursor-pointer select-none transition-all ${
+                        productSizes.includes(size)
+                          ? 'bg-purple-900/40 border-purple-400 text-purple-200 font-bold'
+                          : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:bg-zinc-800'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={productSizes.includes(size)}
+                        onChange={() => handleToggleSize(size)}
+                        className="accent-purple-500 cursor-pointer"
+                      />
+                      <span>{size}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Numbers */}
+              <div className="mb-2">
+                <span className="block text-[10px] text-zinc-400 mb-1">
+                  👟 เบอร์รองเท้า / เบอร์กางเกง:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    'เบอร์ 36',
+                    'เบอร์ 37',
+                    'เบอร์ 38',
+                    'เบอร์ 39',
+                    'เบอร์ 40',
+                    'เบอร์ 41',
+                    'เบอร์ 42',
+                    'เบอร์ 43',
+                    'เบอร์ 44',
+                    'เบอร์ 45',
+                    'เบอร์ 28',
+                    'เบอร์ 30',
+                    'เบอร์ 32',
+                    'เบอร์ 34',
+                  ].map((num) => (
+                    <label
+                      key={num}
+                      className={`flex items-center gap-1 border px-2 py-0.5 rounded-lg text-xs cursor-pointer select-none transition-all ${
+                        productSizes.includes(num)
+                          ? 'bg-amber-950/40 border-amber-500 text-amber-200 font-bold'
+                          : 'bg-zinc-900 border-zinc-700 text-zinc-400 hover:bg-zinc-800'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={productSizes.includes(num)}
+                        onChange={() => handleToggleSize(num)}
+                        className="accent-amber-500 cursor-pointer"
+                      />
+                      <span>{num}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Custom Size/Number Input */}
+              <div className="flex gap-2 items-center">
+                <input
+                  type="text"
+                  value={customSizeInput}
+                  onChange={(e) => setCustomSizeInput(e.target.value)}
+                  placeholder="พิมพ์เบอร์หรือไซส์เอง เช่น เบอร์ 46, 4XL..."
+                  className="flex-1 px-3 py-1.5 bg-zinc-900 border border-zinc-700 rounded-lg text-xs text-white placeholder-zinc-500 outline-none focus:border-purple-500"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomSize();
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddCustomSize}
+                  className="bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs px-3 py-1.5 rounded-lg transition-colors cursor-pointer shrink-0"
+                >
+                  + เพิ่มเบอร์/ไซส์
+                </button>
+              </div>
+            </div>
           </div>
 
           {/* Description */}

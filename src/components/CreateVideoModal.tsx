@@ -42,7 +42,7 @@ interface CreateVideoModalProps {
   currentUser: UserProfile;
   products: Product[];
   onClose: () => void;
-  onVideoCreated: (newVideo: VideoClip) => void;
+  onVideoCreated: (newVideo: VideoClip, mediaBlob?: Blob | File) => void;
   onOpenSellerRegistration: () => void;
 }
 
@@ -73,6 +73,201 @@ interface TextOverlayItem {
   bgColor: string;
 }
 
+export interface AREffectItem {
+  id: string;
+  name: string;
+  category: 'props' | 'atmosphere' | 'commerce';
+  icon: string;
+  badge?: string;
+  description: string;
+}
+
+export const AR_EFFECTS_LIST: AREffectItem[] = [
+  // 1. หมวดวัตถุเสมือน AR (Virtual Props & Accessories)
+  {
+    id: 'sunglasses',
+    name: 'แว่นกันแดดสุดคูล',
+    category: 'props',
+    icon: '🕶️',
+    badge: 'ยอดฮิต',
+    description: 'แว่นตากันแดดสีดำขลับเงาวาวสะท้อนแสงไฟ',
+  },
+  {
+    id: 'gold_crown',
+    name: 'มงกุฎทองคำราชันย์',
+    category: 'props',
+    icon: '👑',
+    badge: 'มาแรง',
+    description: 'มงกุฎทองคำประดับอัญมณีลอยเรืองแสง',
+  },
+  {
+    id: 'cat_ears',
+    name: 'หูแมวนีออนอนิเมะ',
+    category: 'props',
+    icon: '🐱',
+    badge: 'น่ารัก',
+    description: 'หูแมวไซเบอร์เรืองแสงสีชมพู-ฟ้าขยับดุ๊กดิ๊ก',
+  },
+  {
+    id: 'angel_wings',
+    name: 'ปีกนางฟ้าเรืองแสง',
+    category: 'props',
+    icon: '🪽',
+    badge: 'ใหม่',
+    description: 'ปีกขนนกนางฟ้าเปล่งแสงสีขาวออโรร่าพริ้วไหว',
+  },
+  {
+    id: 'pink_ribbon',
+    name: 'โบว์เจ้าหญิงคาวาอี้',
+    category: 'props',
+    icon: '🎀',
+    badge: 'ฮิต',
+    description: 'โบว์ผ้าซาตินสีชมพูพาสเทลน่ารักสดใส',
+  },
+  {
+    id: 'street_cap',
+    name: 'หมวกแก๊ปไฮป์บีสต์',
+    category: 'props',
+    icon: '🧢',
+    description: 'หมวกแก๊ปสตรีทแฟชั่นสุดเท่พร้อมโลโก้',
+  },
+
+  // 2. หมวดบรรยากาศ & แอนิเมชันลอยตัว (Atmosphere & FX)
+  {
+    id: 'money_rain',
+    name: 'ฝนธนบัตรลอยตัว',
+    category: 'atmosphere',
+    icon: '💸',
+    badge: 'รวยๆ',
+    description: 'ธนบัตรลอยโปรยปรายลงมาสมจริงทั่วทั้งหน้าจอ',
+  },
+  {
+    id: 'floating_hearts',
+    name: 'หัวใจฟรุ้งฟริ้งลอยฟ้า',
+    category: 'atmosphere',
+    icon: '💕',
+    badge: 'ยอดนิยม',
+    description: 'หัวใจเรืองแสงสีชมพูลอยฟุ้งเป็นประกาย',
+  },
+  {
+    id: 'glitter_sparkles',
+    name: 'ประกายดาวทองวิบวับ',
+    category: 'atmosphere',
+    icon: '✨',
+    badge: 'ออโรร่า',
+    description: 'ดาวทองระยิบระยับเปล่งแสงรอบตัว',
+  },
+  {
+    id: 'fire_aura',
+    name: 'เปลวเพลิงซูเปอร์ออร่า',
+    category: 'atmosphere',
+    icon: '🔥',
+    badge: 'ทรงพลัง',
+    description: 'แสงออร่าเปลวเพลิงสีทองล้อมรอบจอ',
+  },
+  {
+    id: 'neon_lasers',
+    name: 'เลเซอร์ไซเบอร์พังค์',
+    category: 'atmosphere',
+    icon: '⚡',
+    description: 'ลำแสงเลเซอร์นีออนล้ำอนาคตเคลื่อนไหวรอบจอ',
+  },
+
+  // 3. หมวดวัตถุไลฟ์ขายของ & ป้ายโปรโมชัน 3D (E-Commerce Live Props)
+  {
+    id: 'sale_badge',
+    name: 'ป้ายลดราคา 50% วิ่งวน',
+    category: 'commerce',
+    icon: '🏷️',
+    badge: 'ขายดี',
+    description: 'ป้าย Flash Sale ลดราคาหมุนและเต้นเรียกลูกค้า',
+  },
+  {
+    id: 'live_hot',
+    name: 'ป้ายสินค้าขายดี HOT',
+    category: 'commerce',
+    icon: '🔥',
+    badge: 'ด่วน',
+    description: 'ป้ายไฟสินค้าขายดีการันตียอดขายปัง',
+  },
+  {
+    id: 'free_delivery',
+    name: 'รถส่งฟรีทั่วไทย',
+    category: 'commerce',
+    icon: '🚚',
+    badge: 'ส่งฟรี',
+    description: 'รถส่งของวิ่งพร้อมป้ายส่งฟรีมีคูปอง',
+  },
+];
+
+export interface SampleVideoItem {
+  id: string;
+  title: string;
+  category: string;
+  duration: string;
+  videoUrl: string;
+  thumbnail: string;
+  tag: string;
+}
+
+// Preset viral TikTok sample videos for quick 1-tap import
+export const PRESET_SAMPLE_VIDEOS: SampleVideoItem[] = [
+  {
+    id: 'sample-motor',
+    title: 'มอเตอร์ไซค์ Superbike & Biker Racing (video1.mp4)',
+    category: 'ยานยนต์ & สปอร์ต',
+    duration: '0:10',
+    videoUrl: '/video1.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=400&auto=format&fit=crop&q=80',
+    tag: 'คลิปหลัก 🏍️',
+  },
+  {
+    id: 'sample-1',
+    title: 'รีวิวเสื้อยืด Streetwear สตรีทซิตี้',
+    category: 'เสื้อผ้า & แฟชั่น',
+    duration: '0:15',
+    videoUrl: '/city.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=400&auto=format&fit=crop&q=80',
+    tag: 'ยอดนิยม 🔥',
+  },
+  {
+    id: 'sample-2',
+    title: 'ถ่ายแบบสตูดิโอ & แฟชั่นมินิมอล ดอกไม้',
+    category: 'แฟชั่น & โมเดล',
+    duration: '0:12',
+    videoUrl: '/flower.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=400&auto=format&fit=crop&q=80',
+    tag: 'บิวตี้ ✨',
+  },
+  {
+    id: 'sample-3',
+    title: 'มอเตอร์สปอร์ต & เรซซิ่ง แรลลี่ (motor.mp4)',
+    category: 'ยานยนต์ & สปอร์ต',
+    duration: '0:10',
+    videoUrl: '/motor.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=400&auto=format&fit=crop&q=80',
+    tag: 'เร่งแรง ⚡',
+  },
+  {
+    id: 'sample-4',
+    title: 'สไตล์ซิตี้ไลฟ์ แฟชั่นวัยรุ่น',
+    category: 'ไลฟ์สไตล์',
+    duration: '0:15',
+    videoUrl: '/city.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1511556532299-8f662fc26c06?w=400&auto=format&fit=crop&q=80',
+    tag: 'ฮิต 🛹',
+  },
+  {
+    id: 'sample-5',
+    title: 'คอลเลกชันธรรมชาติ มินิมอล & บลูมมิ่ง',
+    category: 'แฟชั่น & อาร์ต',
+    duration: '0:12',
+    videoUrl: '/flower.mp4',
+    thumbnail: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&auto=format&fit=crop&q=80',
+    tag: 'สดใส 🌸',
+  },
+];
+
 export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
   isOpen,
   currentUser,
@@ -95,6 +290,7 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
 
   // Loaded / Uploaded Video State (ย้ายมาอยู่หน้าเดียวกันกับเครื่องมือ)
   const [selectedMediaUrl, setSelectedMediaUrl] = useState<string>('');
+  const [selectedMediaBlob, setSelectedMediaBlob] = useState<Blob | File | null>(null);
   const [isPhotoCaptured, setIsPhotoCaptured] = useState<boolean>(false);
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [isMuted, setIsMuted] = useState<boolean>(false);
@@ -102,6 +298,11 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
   const [isVolumeOpen, setIsVolumeOpen] = useState<boolean>(false);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const gainNodeRef = useRef<GainNode | null>(null);
+
+  // Video Import & Library Drawer State (แก้ปัญหาหาวิดีโอไม่เจอ โดยมีทั้งคลังคลิปพร้อมใช้ อัปโหลดจากเครื่อง และลิงก์ URL)
+  const [isUploadPickerOpen, setIsUploadPickerOpen] = useState<boolean>(false);
+  const [customVideoUrlInput, setCustomVideoUrlInput] = useState<string>('');
+  const [uploadPickerTab, setUploadPickerTab] = useState<'preset' | 'device' | 'url'>('preset');
 
   // Active Camera / Video Tools (ตามรูปและคำขอของผู้ใช้)
   const [activeMode, setActiveMode] = useState<'60s' | '30s' | '15s' | 'photo' | 'text'>('30s');
@@ -115,7 +316,10 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
   const [isTimerOpen, setIsTimerOpen] = useState<boolean>(false);
   const [showGrid, setShowGrid] = useState<boolean>(false);
   
-  // Effects & Filters
+  // Effects, AR Objects & Beauty Filters (เปิดใช้งานระบบเอฟเฟกต์ & วัตถุเสมือน AR เต็มรูปแบบ)
+  const [activeArEffect, setActiveArEffect] = useState<string | null>(null);
+  const [isEffectsDrawerOpen, setIsEffectsDrawerOpen] = useState<boolean>(false);
+  const [effectsFilterCategory, setEffectsFilterCategory] = useState<'all' | 'props' | 'atmosphere' | 'commerce'>('all');
   const [beautyFilter, setBeautyFilter] = useState<'none' | 'smooth' | 'glow' | 'cyber' | 'vintage' | 'mono'>('none');
   const [isFiltersOpen, setIsFiltersOpen] = useState<boolean>(false);
   const [showMoreTools, setShowMoreTools] = useState<boolean>(false);
@@ -246,15 +450,46 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setSelectedMediaBlob(file);
       const url = URL.createObjectURL(file);
       setSelectedMediaUrl(url);
       setIsPhotoCaptured(file.type.startsWith('image/'));
       setIsPlaying(true);
       setIsMuted(false); // ต้นฉบับมีเสียง: เปิดเสียงทันที
       setVolume(100);
-      // Stay in 'editor' phase so user can add sound, text, and effects right here!
       setPhase('editor');
+      setIsUploadPickerOpen(false);
     }
+  };
+
+  // Quick 1-tap select from preset viral TikTok sample videos
+  const handleSelectPresetVideo = (url: string) => {
+    setSelectedMediaBlob(null);
+    setSelectedMediaUrl(url);
+    setIsPhotoCaptured(false);
+    setIsPlaying(true);
+    setIsMuted(false);
+    setVolume(100);
+    setPhase('editor');
+    setIsUploadPickerOpen(false);
+  };
+
+  // Import video via direct URL
+  const handleImportUrlVideo = (urlToImport?: string) => {
+    const url = urlToImport || customVideoUrlInput.trim();
+    if (!url) {
+      alert('กรุณากรอกลิงก์วิดีโอ (URL)');
+      return;
+    }
+    setSelectedMediaBlob(null);
+    setSelectedMediaUrl(url);
+    setIsPhotoCaptured(false);
+    setIsPlaying(true);
+    setIsMuted(false);
+    setVolume(100);
+    setPhase('editor');
+    setCustomVideoUrlInput('');
+    setIsUploadPickerOpen(false);
   };
 
   // Capture Photo
@@ -274,6 +509,11 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
             ctx.scale(-1, 1);
           }
           ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob((blob) => {
+            if (blob) {
+              setSelectedMediaBlob(blob);
+            }
+          }, 'image/jpeg', 0.95);
           const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
           setSelectedMediaUrl(dataUrl);
           setIsPhotoCaptured(true);
@@ -326,6 +566,7 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
         };
         recorder.onstop = () => {
           const blob = new Blob(recordedChunksRef.current, { type: 'video/mp4' });
+          setSelectedMediaBlob(blob);
           const videoUrl = URL.createObjectURL(blob);
           setSelectedMediaUrl(videoUrl);
           setIsPhotoCaptured(false);
@@ -362,9 +603,7 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     } else {
-      setSelectedMediaUrl(
-        'https://assets.mixkit.co/videos/preview/mixkit-young-man-skateboarding-in-a-parking-lot-41551-large.mp4'
-      );
+      setSelectedMediaUrl('/city.mp4');
       setIsPhotoCaptured(false);
       setIsPlaying(true);
     }
@@ -429,6 +668,7 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
   // Clear loaded video and return to clean live camera
   const handleResetToCamera = () => {
     setSelectedMediaUrl('');
+    setSelectedMediaBlob(null);
     setIsPhotoCaptured(false);
     setIsPlaying(true);
     setIsMuted(false);
@@ -448,7 +688,7 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
   };
 
   // Submit and Publish Video
-  const handlePublish = (e: React.FormEvent) => {
+  const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!caption.trim()) {
       alert('กรุณากรอกแคปชันวิดีโอ');
@@ -466,38 +706,51 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
       .map((tag) => tag.trim())
       .filter((tag) => tag.startsWith('#'));
 
-    setTimeout(() => {
-      const newClip: VideoClip = {
-        id: 'vid-user-' + Date.now(),
-        videoUrl:
-          selectedMediaUrl ||
-          'https://assets.mixkit.co/videos/preview/mixkit-young-man-skateboarding-in-a-parking-lot-41551-large.mp4',
-        fallbackGradient: 'from-purple-950 via-zinc-900 to-black',
-        creator: {
-          id: currentUser.id,
-          name: currentUser.name,
-          handle: currentUser.handle,
-          avatarUrl: currentUser.avatarUrl,
-          verified: currentUser.isSeller,
-          isFollowing: true,
-        },
-        caption: caption.trim(),
-        hashtags: parsedHashtags.length > 0 ? parsedHashtags : ['#TikTokShop', '#รีวิวสินค้า'],
-        musicTitle: selectedMusic === 'เพิ่มเสียง' ? `Original Sound - ${currentUser.name}` : selectedMusic,
-        likesCount: 1,
-        commentsCount: 0,
-        sharesCount: 0,
-        savesCount: 0,
-        isLiked: false,
-        isSaved: false,
-        product: pinnedProduct,
-        comments: [],
-      };
+    // Prepare media blob for persistent IndexedDB storage
+    let mediaBlobToSave: Blob | File | undefined = selectedMediaBlob || undefined;
+    if (!mediaBlobToSave && selectedMediaUrl) {
+      if (selectedMediaUrl.startsWith('blob:') || selectedMediaUrl.startsWith('data:')) {
+        try {
+          const res = await fetch(selectedMediaUrl);
+          mediaBlobToSave = await res.blob();
+        } catch (err) {
+          console.warn('Could not extract blob from url for IndexedDB storage:', err);
+        }
+      }
+    }
 
+    const newClip: VideoClip = {
+      id: 'vid-user-' + Date.now(),
+      videoUrl:
+        selectedMediaUrl ||
+        '/motor.mp4',
+      fallbackGradient: 'from-purple-950 via-zinc-900 to-black',
+      creator: {
+        id: currentUser.id,
+        name: currentUser.name,
+        handle: currentUser.handle,
+        avatarUrl: currentUser.avatarUrl,
+        verified: currentUser.isSeller,
+        isFollowing: true,
+      },
+      caption: caption.trim(),
+      hashtags: parsedHashtags.length > 0 ? parsedHashtags : ['#TikTokShop', '#รีวิวสินค้า'],
+      musicTitle: selectedMusic === 'เพิ่มเสียง' ? `Original Sound - ${currentUser.name}` : selectedMusic,
+      likesCount: 1,
+      commentsCount: 0,
+      sharesCount: 0,
+      savesCount: 0,
+      isLiked: false,
+      isSaved: false,
+      product: pinnedProduct,
+      comments: [],
+    };
+
+    setTimeout(() => {
       setIsUploading(false);
-      onVideoCreated(newClip);
+      onVideoCreated(newClip, mediaBlobToSave);
       onClose();
-    }, 600);
+    }, 400);
   };
 
   if (!isOpen) return null;
@@ -521,6 +774,301 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
         return 'grayscale contrast-125';
       default:
         return '';
+    }
+  };
+
+  // Render active AR Virtual Object / Effect on top of camera or video
+  const renderArEffect = (effectId: string) => {
+    switch (effectId) {
+      case 'sunglasses':
+        return (
+          <div className="relative animate-gentle-bob -translate-y-16 flex flex-col items-center">
+            <div className="relative flex items-center filter drop-shadow-[0_8px_20px_rgba(0,0,0,0.85)]">
+              {/* Left Lens */}
+              <div className="w-24 h-14 rounded-b-[28px] rounded-t-[10px] bg-gradient-to-b from-zinc-800 via-zinc-950 to-black border-2 border-amber-400 relative overflow-hidden shadow-2xl">
+                <div className="absolute -top-3 -left-6 w-14 h-24 bg-gradient-to-r from-transparent via-white/40 to-transparent rotate-25 pointer-events-none" />
+                <div className="absolute bottom-1 right-2 w-1.5 h-1.5 rounded-full bg-amber-400" />
+              </div>
+              {/* Center Gold Bridge */}
+              <div className="w-5 h-2 bg-gradient-to-r from-amber-400 via-yellow-200 to-amber-400 shadow -mt-4 rounded-full" />
+              {/* Right Lens */}
+              <div className="w-24 h-14 rounded-b-[28px] rounded-t-[10px] bg-gradient-to-b from-zinc-800 via-zinc-950 to-black border-2 border-amber-400 relative overflow-hidden shadow-2xl">
+                <div className="absolute -top-3 -left-6 w-14 h-24 bg-gradient-to-r from-transparent via-white/40 to-transparent rotate-25 pointer-events-none" />
+                <div className="absolute bottom-1 left-2 w-1.5 h-1.5 rounded-full bg-amber-400" />
+              </div>
+            </div>
+            {/* VIP Brand Badge */}
+            <span className="mt-1 px-2.5 py-0.5 rounded-full bg-black/75 text-[9px] font-mono tracking-widest text-amber-300 border border-amber-400/50 shadow">
+              ★ VIP STREETWEAR SHADES ★
+            </span>
+          </div>
+        );
+
+      case 'gold_crown':
+        return (
+          <div className="relative animate-gentle-bob -translate-y-36 flex flex-col items-center">
+            <div className="relative w-44 h-28 filter drop-shadow-[0_0_30px_rgba(250,204,21,0.8)] flex items-end justify-center">
+              <svg viewBox="0 0 200 120" className="w-full h-full">
+                <defs>
+                  <linearGradient id="crownGradModal" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#FDE047" />
+                    <stop offset="50%" stopColor="#EAB308" />
+                    <stop offset="100%" stopColor="#CA8A04" />
+                  </linearGradient>
+                </defs>
+                <polygon
+                  points="10,105 190,105 185,45 150,75 100,20 50,75 15,45"
+                  fill="url(#crownGradModal)"
+                  stroke="#FEF08A"
+                  strokeWidth="3"
+                />
+                <rect x="10" y="95" width="180" height="15" rx="5" fill="#A16207" />
+                <rect x="12" y="97" width="176" height="11" rx="4" fill="url(#crownGradModal)" />
+                <circle cx="100" cy="20" r="9" fill="#F43F5E" stroke="#FFF" strokeWidth="2" />
+                <circle cx="15" cy="45" r="7" fill="#3B82F6" stroke="#FFF" strokeWidth="1.5" />
+                <circle cx="185" cy="45" r="7" fill="#3B82F6" stroke="#FFF" strokeWidth="1.5" />
+                <circle cx="50" cy="75" r="6" fill="#10B981" stroke="#FFF" strokeWidth="1.5" />
+                <circle cx="150" cy="75" r="6" fill="#10B981" stroke="#FFF" strokeWidth="1.5" />
+              </svg>
+            </div>
+            <span className="absolute -top-3 -left-3 text-xl animate-ping">✨</span>
+            <span className="absolute -top-4 right-1 text-2xl animate-bounce">✨</span>
+            <span className="absolute top-12 -right-4 text-lg animate-pulse">💎</span>
+          </div>
+        );
+
+      case 'cat_ears':
+        return (
+          <div className="relative animate-gentle-bob -translate-y-40 w-64 flex justify-between px-6 filter drop-shadow-[0_0_25px_rgba(244,114,182,0.95)]">
+            <div className="relative w-20 h-24 rotate-[-12deg] animate-wing-left">
+              <svg viewBox="0 0 100 120" className="w-full h-full">
+                <polygon points="5,115 50,10 95,115" fill="#18181B" stroke="#F472B6" strokeWidth="6" />
+                <polygon points="25,110 50,40 75,110" fill="#EC4899" />
+                <circle cx="50" cy="25" r="4" fill="#67E8F9" />
+              </svg>
+            </div>
+            <div className="relative w-20 h-24 rotate-[12deg] animate-wing-right">
+              <svg viewBox="0 0 100 120" className="w-full h-full">
+                <polygon points="5,115 50,10 95,115" fill="#18181B" stroke="#F472B6" strokeWidth="6" />
+                <polygon points="25,110 50,40 75,110" fill="#EC4899" />
+                <circle cx="50" cy="25" r="4" fill="#67E8F9" />
+              </svg>
+            </div>
+          </div>
+        );
+
+      case 'angel_wings':
+        return (
+          <div className="absolute inset-0 flex items-center justify-between px-2 filter drop-shadow-[0_0_35px_rgba(255,255,255,0.95)] pointer-events-none">
+            <div className="w-40 h-64 -translate-x-4 animate-wing-left">
+              <svg viewBox="0 0 160 260" className="w-full h-full">
+                <path
+                  d="M150,130 C120,40 60,20 10,60 C-5,85 10,120 40,140 C10,150 15,180 50,195 C25,205 35,235 70,240 C110,245 140,200 150,130 Z"
+                  fill="rgba(255,255,255,0.85)"
+                  stroke="#A5F3FC"
+                  strokeWidth="3"
+                />
+                <path d="M140,110 C100,50 60,60 30,90" stroke="#38BDF8" strokeWidth="2" fill="none" />
+                <path d="M135,140 C100,100 65,115 45,145" stroke="#38BDF8" strokeWidth="2" fill="none" />
+                <path d="M130,170 C95,145 70,165 55,190" stroke="#38BDF8" strokeWidth="2" fill="none" />
+              </svg>
+            </div>
+            <div className="w-40 h-64 translate-x-4 animate-wing-right">
+              <svg viewBox="0 0 160 260" className="w-full h-full scale-x-[-1]">
+                <path
+                  d="M150,130 C120,40 60,20 10,60 C-5,85 10,120 40,140 C10,150 15,180 50,195 C25,205 35,235 70,240 C110,245 140,200 150,130 Z"
+                  fill="rgba(255,255,255,0.85)"
+                  stroke="#A5F3FC"
+                  strokeWidth="3"
+                />
+                <path d="M140,110 C100,50 60,60 30,90" stroke="#38BDF8" strokeWidth="2" fill="none" />
+                <path d="M135,140 C100,100 65,115 45,145" stroke="#38BDF8" strokeWidth="2" fill="none" />
+                <path d="M130,170 C95,145 70,165 55,190" stroke="#38BDF8" strokeWidth="2" fill="none" />
+              </svg>
+            </div>
+          </div>
+        );
+
+      case 'pink_ribbon':
+        return (
+          <div className="relative animate-gentle-bob -translate-y-36 flex flex-col items-center filter drop-shadow-[0_0_25px_rgba(244,114,182,0.9)]">
+            <div className="text-8xl">🎀</div>
+            <span className="mt-[-10px] px-2.5 py-0.5 rounded-full bg-pink-500 text-white text-[9px] font-bold shadow">
+              KAWAII PRINCESS
+            </span>
+          </div>
+        );
+
+      case 'street_cap':
+        return (
+          <div className="relative animate-gentle-bob -translate-y-36 flex flex-col items-center filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.85)]">
+            <div className="text-8xl">🧢</div>
+            <span className="mt-[-12px] px-2.5 py-0.5 rounded-full bg-red-600 text-[8px] font-black tracking-widest text-white border border-white/60 shadow">
+              STREETWEAR 2026
+            </span>
+          </div>
+        );
+
+      case 'money_rain':
+        return (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(14)].map((_, i) => {
+              const left = `${(i * 7.5 + 4) % 94}%`;
+              const delay = `${(i * 0.35) % 2.5}s`;
+              const duration = `${2.4 + ((i * 0.4) % 1.6)}s`;
+              const isBhat = i % 2 === 0;
+              return (
+                <div
+                  key={i}
+                  className="absolute top-0 flex items-center justify-center filter drop-shadow-lg"
+                  style={{
+                    left,
+                    animation: `fall-rain ${duration} linear ${delay} infinite`,
+                  }}
+                >
+                  {isBhat ? (
+                    <div className="px-2 py-1 rounded bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-mono font-bold text-[10px] border border-emerald-300 shadow-md flex items-center gap-1 rotate-12">
+                      <span>฿</span>
+                      <span>1,000</span>
+                    </div>
+                  ) : (
+                    <div className="px-2 py-1 rounded bg-gradient-to-r from-green-700 to-emerald-900 text-emerald-100 font-mono font-bold text-[10px] border border-green-300 shadow-md flex items-center gap-1 -rotate-6">
+                      <span>$</span>
+                      <span>100</span>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+
+      case 'floating_hearts':
+        return (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(12)].map((_, i) => {
+              const left = `${(i * 8.5 + 5) % 92}%`;
+              const delay = `${(i * 0.45) % 3}s`;
+              const duration = `${3 + ((i * 0.3) % 1.5)}s`;
+              const emoji = ['💖', '💕', '💗', '💓', '✨', '🥰'][i % 6];
+              return (
+                <div
+                  key={i}
+                  className="absolute bottom-6 text-2xl filter drop-shadow-[0_0_15px_rgba(244,114,182,0.95)]"
+                  style={{
+                    left,
+                    animation: `float-up-particle ${duration} ease-in ${delay} infinite`,
+                  }}
+                >
+                  {emoji}
+                </div>
+              );
+            })}
+          </div>
+        );
+
+      case 'glitter_sparkles':
+        return (
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            {[...Array(16)].map((_, i) => {
+              const left = `${(i * 13 + 7) % 90}%`;
+              const top = `${(i * 17 + 10) % 85}%`;
+              const delay = `${(i * 0.25) % 2}s`;
+              const duration = `${1.4 + ((i * 0.3) % 1.2)}s`;
+              return (
+                <div
+                  key={i}
+                  className="absolute text-yellow-300 text-2xl filter drop-shadow-[0_0_12px_rgba(253,224,71,1)]"
+                  style={{
+                    left,
+                    top,
+                    animation: `star-twinkle ${duration} ease-in-out ${delay} infinite`,
+                  }}
+                >
+                  ✦
+                </div>
+              );
+            })}
+          </div>
+        );
+
+      case 'fire_aura':
+        return (
+          <div className="absolute inset-0 pointer-events-none flex flex-col justify-between">
+            <div className="absolute inset-0 border-[6px] border-amber-400/70 rounded-none shadow-[inset_0_0_50px_rgba(245,158,11,0.6)] animate-pulse-aura" />
+            <div className="absolute inset-x-0 bottom-0 h-44 bg-gradient-to-t from-red-600/40 via-amber-500/20 to-transparent flex justify-around items-end pb-4">
+              {[...Array(8)].map((_, i) => (
+                <span key={i} className="text-3xl animate-bounce" style={{ animationDelay: `${i * 0.2}s` }}>
+                  🔥
+                </span>
+              ))}
+            </div>
+          </div>
+        );
+
+      case 'neon_lasers':
+        return (
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-8 border border-cyan-400/40 pointer-events-none">
+              <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-cyan-400" />
+              <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-cyan-400" />
+              <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-cyan-400" />
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-cyan-400" />
+            </div>
+            <div className="absolute inset-x-0 h-1 bg-cyan-400 shadow-[0_0_20px_#22d3ee] animate-pulse" style={{ top: '40%' }} />
+            <div className="absolute inset-x-0 h-0.5 bg-rose-500 shadow-[0_0_20px_#f43f5e] animate-pulse" style={{ top: '65%' }} />
+            <div className="absolute bottom-16 right-6 px-2 py-0.5 rounded bg-cyan-950/80 border border-cyan-400 text-[9px] font-mono text-cyan-300">
+              AR_TARGET: LOCKED [99.8%]
+            </div>
+          </div>
+        );
+
+      case 'sale_badge':
+        return (
+          <div className="absolute top-28 right-5 animate-gentle-bob filter drop-shadow-[0_10px_25px_rgba(239,68,68,0.7)] pointer-events-auto">
+            <div className="w-24 h-24 rounded-full bg-gradient-to-tr from-red-600 via-rose-500 to-amber-400 p-1 flex items-center justify-center text-center shadow-2xl animate-spin-slow">
+              <div className="w-full h-full rounded-full bg-zinc-950 flex flex-col items-center justify-center p-1 text-white border border-amber-300">
+                <span className="text-[10px] font-extrabold text-amber-300">FLASH</span>
+                <span className="text-xl font-black text-rose-500 leading-none">50%</span>
+                <span className="text-[9px] font-bold text-white uppercase tracking-wider">OFF</span>
+              </div>
+            </div>
+            <div className="mt-1 px-2 py-0.5 rounded-full bg-amber-400 text-black text-[9px] font-extrabold text-center shadow">
+              ⚡ ลดกระหน่ำ
+            </div>
+          </div>
+        );
+
+      case 'live_hot':
+        return (
+          <div className="absolute top-24 left-4 animate-bounce filter drop-shadow-[0_8px_20px_rgba(249,115,22,0.8)] pointer-events-auto">
+            <div className="px-3 py-1.5 rounded-2xl bg-gradient-to-r from-red-600 via-orange-500 to-amber-500 text-white font-extrabold text-xs shadow-2xl flex items-center gap-1.5 border border-white/40">
+              <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+              <span>🔥 สินค้าขายดี HOT ITEM</span>
+            </div>
+          </div>
+        );
+
+      case 'free_delivery':
+        return (
+          <div className="absolute bottom-28 inset-x-6 animate-gentle-bob filter drop-shadow-[0_10px_25px_rgba(16,185,129,0.7)] pointer-events-auto">
+            <div className="px-4 py-2 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 text-white font-extrabold text-xs shadow-2xl flex items-center justify-between border-2 border-emerald-300">
+              <div className="flex items-center gap-2">
+                <span className="text-xl">🚚</span>
+                <div>
+                  <div className="text-xs font-black">ส่งฟรี ทั่วประเทศ!</div>
+                  <div className="text-[9px] text-emerald-100 font-medium">เก็บเงินปลายทาง • ไม่มีขั้นต่ำ</div>
+                </div>
+              </div>
+              <span className="px-2 py-1 rounded-lg bg-white text-emerald-700 text-[10px] font-black shadow">
+                ใช้โค้ดฟรี
+              </span>
+            </div>
+          </div>
+        );
+
+      default:
+        return null;
     }
   };
 
@@ -722,6 +1270,36 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
               })}
             </div>
 
+            {/* OVERLAY: Active AR Virtual Objects & Atmosphere Effects (วัตถุเสมือนและเอฟเฟกต์ที่เลือกใช้งาน) */}
+            {activeArEffect && (
+              <div className="absolute inset-0 pointer-events-none z-20 overflow-hidden flex items-center justify-center">
+                {renderArEffect(activeArEffect)}
+              </div>
+            )}
+
+            {/* Floating Active Effect Pill (แสดงชื่อเอฟเฟกต์และปุ่มกากบาทปิดด่วน) */}
+            {activeArEffect && (
+              <div className="absolute top-16 right-3 z-30 pointer-events-auto flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/80 border border-pink-500/60 backdrop-blur-md shadow-2xl animate-in fade-in">
+                <span className="text-sm">
+                  {AR_EFFECTS_LIST.find((e) => e.id === activeArEffect)?.icon}
+                </span>
+                <span className="text-[11px] font-bold text-pink-300">
+                  {AR_EFFECTS_LIST.find((e) => e.id === activeArEffect)?.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveArEffect(null);
+                  }}
+                  className="ml-1 w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center text-[10px] text-white cursor-pointer"
+                  title="ปิดเอฟเฟกต์นี้"
+                >
+                  ×
+                </button>
+              </div>
+            )}
+
             {/* Flash screen overlay animation */}
             {flashOn && (
               <div className="absolute inset-0 bg-white z-40 animate-out fade-out duration-300 pointer-events-none" />
@@ -766,14 +1344,24 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
           <div className="relative z-20 pt-4 px-4 flex items-center justify-between">
             {/* Left Button */}
             {selectedMediaUrl ? (
-              <button
-                onClick={handleResetToCamera}
-                className="py-1.5 px-3 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-xs font-semibold flex items-center gap-1.5 text-zinc-200 hover:text-white border border-white/10 cursor-pointer shadow-md active:scale-95 transition-all"
-                title="ลบคลิปนี้เพื่อเปิดกล้องใหม่"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>ถ่ายใหม่</span>
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={handleResetToCamera}
+                  className="py-1.5 px-3 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md text-xs font-semibold flex items-center gap-1.5 text-zinc-200 hover:text-white border border-white/10 cursor-pointer shadow-md active:scale-95 transition-all"
+                  title="ลบคลิปนี้เพื่อเปิดกล้องใหม่"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>ถ่ายใหม่</span>
+                </button>
+                <button
+                  onClick={() => setIsUploadPickerOpen(true)}
+                  className="py-1.5 px-3 rounded-full bg-cyan-600/90 hover:bg-cyan-500 text-xs font-semibold flex items-center gap-1.5 text-white border border-cyan-400/40 cursor-pointer shadow-md active:scale-95 transition-all"
+                  title="เปลี่ยนคลิปหรือเปิดคลังวิดีโอ"
+                >
+                  <Film className="w-3.5 h-3.5" />
+                  <span>เปลี่ยนคลิป</span>
+                </button>
+              </div>
             ) : (
               <button
                 onClick={onClose}
@@ -810,7 +1398,21 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
           {/* 3. RIGHT VERTICAL TOOLBAR: Complete toolset for video editing & camera */}
           <div className="absolute right-3 top-16 z-20 flex flex-col items-center gap-3.5 text-white">
             
-            {/* 1) ข้อความ (Text Tool - เพิ่มข้อความบนวิดีโอ) */}
+            {/* 1) สลับกล้อง (Flip Camera - อยู่ข้างบนสุด บน T ข้อความ) */}
+            {!selectedMediaUrl && (
+              <button
+                onClick={handleFlipCamera}
+                className="flex flex-col items-center gap-0.5 group cursor-pointer active:scale-90 transition-transform"
+                title="สลับกล้องหน้า/หลัง"
+              >
+                <div className="w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/10 group-hover:border-purple-400">
+                  <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-300" />
+                </div>
+                <span className="text-[9px] font-medium drop-shadow">สลับกล้อง</span>
+              </button>
+            )}
+
+            {/* 2) ข้อความ (Text Tool - T ข้อความ) */}
             <button
               onClick={() => setIsAddingText(true)}
               className="flex flex-col items-center gap-0.5 group cursor-pointer active:scale-90 transition-transform"
@@ -822,21 +1424,29 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
               <span className="text-[9px] font-medium drop-shadow">ข้อความ</span>
             </button>
 
-            {/* 2) เอฟเฟกต์ & ฟิลเตอร์ (Filters/Effects) */}
+            {/* 3) เอฟเฟกต์ & วัตถุ AR (Filters & AR Effects) */}
             <button
-              onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+              onClick={() => setIsEffectsDrawerOpen(true)}
               className={`flex flex-col items-center gap-0.5 group cursor-pointer active:scale-90 transition-transform ${
-                beautyFilter !== 'none' ? 'text-rose-400' : ''
+                activeArEffect || beautyFilter !== 'none' ? 'text-pink-400' : ''
               }`}
-              title="เอฟเฟกต์และฟิลเตอร์วิดีโอ"
+              title="เปิดใช้งานเอฟเฟกต์และวัตถุเสมือน AR"
             >
-              <div className="w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/10 group-hover:border-rose-400">
-                <Smile className="w-5 h-5" />
+              <div
+                className={`w-10 h-10 rounded-full backdrop-blur-md flex items-center justify-center shadow-lg border transition-all ${
+                  activeArEffect
+                    ? 'bg-gradient-to-tr from-pink-600 to-rose-600 border-pink-300 ring-2 ring-pink-400/50 scale-105'
+                    : 'bg-black/40 hover:bg-black/70 border-white/10 group-hover:border-rose-400'
+                }`}
+              >
+                <Sparkles className="w-5 h-5 text-yellow-300" />
               </div>
-              <span className="text-[9px] font-medium drop-shadow">เอฟเฟกต์</span>
+              <span className="text-[9px] font-medium drop-shadow">
+                {activeArEffect ? 'เปิดอยู่' : 'เอฟเฟกต์'}
+              </span>
             </button>
 
-            {/* 3) สติ๊กเกอร์ / ป้ายตระกล้า (Stickers) */}
+            {/* 4) สติ๊กเกอร์ / ป้ายตระกล้า (Stickers) */}
             <button
               onClick={() => setIsStickersOpen(!isStickersOpen)}
               className={`flex flex-col items-center gap-0.5 group cursor-pointer active:scale-90 transition-transform ${
@@ -850,7 +1460,7 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
               <span className="text-[9px] font-medium drop-shadow">สติ๊กเกอร์</span>
             </button>
 
-            {/* 4) ความเร็ว / สปีด (Speed) */}
+            {/* 5) ความเร็ว / สปีด (Speed) */}
             <button
               onClick={() => setIsSpeedOpen(!isSpeedOpen)}
               className={`flex flex-col items-center gap-0.5 group cursor-pointer active:scale-90 transition-transform ${
@@ -864,7 +1474,7 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
               <span className="text-[9px] font-medium drop-shadow">{speed}</span>
             </button>
 
-            {/* 5) ปุ่มเปิดเสียง / เร่งเสียงต้นฉบับ (Audio & Volume Boost Control) */}
+            {/* 6) ปุ่มเปิดเสียง / เร่งเสียงต้นฉบับ (Audio & Volume Boost Control) */}
             {selectedMediaUrl && !isPhotoCaptured && (
               <button
                 onClick={() => setIsVolumeOpen(!isVolumeOpen)}
@@ -897,20 +1507,6 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
                 <span className="text-[9px] font-bold drop-shadow">
                   {isMuted ? 'เปิดเสียง' : volume > 100 ? `เร่ง ${volume}%` : `เสียง ${volume}%`}
                 </span>
-              </button>
-            )}
-
-            {/* 6) สลับกล้อง (Flip Camera - only when in camera mode) */}
-            {!selectedMediaUrl && (
-              <button
-                onClick={handleFlipCamera}
-                className="flex flex-col items-center gap-0.5 group cursor-pointer active:scale-90 transition-transform"
-                title="สลับกล้องหน้า/หลัง"
-              >
-                <div className="w-10 h-10 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md flex items-center justify-center shadow-lg border border-white/10">
-                  <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-300" />
-                </div>
-                <span className="text-[9px] font-medium drop-shadow">สลับกล้อง</span>
               </button>
             )}
 
@@ -1311,11 +1907,12 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
             
             {/* SCENARIO A: VIDEO IS LOADED -> Show Video Action Bar & "ถัดไป" Button */}
             {selectedMediaUrl ? (
-              <div className="w-full px-5 flex items-center gap-2">
+              <div className="w-full px-4 flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={handleResetToCamera}
-                  className="py-2.5 px-4 rounded-2xl bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 font-medium text-xs cursor-pointer transition-colors flex items-center justify-center gap-1.5 shrink-0 backdrop-blur-md border border-white/10"
+                  onClick={() => setIsUploadPickerOpen(true)}
+                  className="py-2.5 px-3 rounded-2xl bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 font-medium text-xs cursor-pointer transition-colors flex items-center justify-center gap-1 shrink-0 backdrop-blur-md border border-white/10"
+                  title="เปลี่ยนวิดีโอ: เลือกคลิปจากคลัง หรืออัปโหลดจากเครื่อง"
                 >
                   <RotateCcw className="w-3.5 h-3.5" />
                   <span>เปลี่ยนคลิป</span>
@@ -1323,10 +1920,24 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
 
                 <button
                   type="button"
-                  onClick={handleProceedToPost}
-                  className="flex-1 py-3 px-5 rounded-2xl bg-gradient-to-r from-red-600 via-[#FE2C55] to-rose-600 hover:opacity-95 text-white font-bold text-sm shadow-xl shadow-red-900/40 cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-2"
+                  onClick={() => setIsEffectsDrawerOpen(true)}
+                  className={`py-2.5 px-3 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-bold transition-all cursor-pointer backdrop-blur-md border shrink-0 ${
+                    activeArEffect
+                      ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white border-pink-400 ring-2 ring-pink-500/40 shadow-lg'
+                      : 'bg-zinc-800/90 hover:bg-zinc-700 text-zinc-300 border-white/10'
+                  }`}
+                  title="เปิดใช้งานเอฟเฟกต์ & วัตถุเสมือน AR"
                 >
-                  <span>ถัดไป (ใส่แคปชัน & สั่งซื้อ)</span>
+                  <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
+                  <span>{activeArEffect ? 'เอฟเฟกต์ (เปิดอยู่)' : 'เอฟเฟกต์'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleProceedToPost}
+                  className="flex-1 py-3 px-3.5 rounded-2xl bg-gradient-to-r from-red-600 via-[#FE2C55] to-rose-600 hover:opacity-95 text-white font-bold text-xs shadow-xl shadow-red-900/40 cursor-pointer active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <span>ถัดไป</span>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
@@ -1399,15 +2010,16 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
                 {/* 4.2 Main Shutter Row: [Album Thumbnail] --- [Big Shutter Button] --- [Effect Avatars] */}
                 <div className="w-full px-6 flex items-center justify-between">
                   
-                  {/* Left: Album Thumbnail (Tap to upload from device directly into this tools screen!) */}
+                  {/* Left: Album Thumbnail & Video Library (เปิดคลังวิดีโอพร้อมใช้ หรืออัปโหลดจากเครื่อง) */}
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => setIsUploadPickerOpen(true)}
                     className="group flex flex-col items-center gap-1 cursor-pointer active:scale-95 transition-transform"
-                    title="เลือกวิดีโอหรือรูปจากคลังภาพในเครื่อง"
+                    title="นำเข้าวิดีโอ: เลือกจากคลังคลิปพร้อมใช้ หรืออัปโหลดไฟล์จากเครื่อง"
                   >
                     <div className="relative w-12 h-12 rounded-xl overflow-hidden border-2 border-white/70 shadow-xl bg-gradient-to-tr from-purple-800 to-indigo-900 group-hover:scale-105 transition-transform flex items-center justify-center text-white">
                       <ImageIcon className="w-5 h-5 text-white/90" />
+                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-black animate-pulse" />
                     </div>
                     <span className="text-[10px] text-zinc-300 font-medium drop-shadow">
                       อัปโหลด
@@ -1433,11 +2045,15 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
                       <div
                         className={`transition-all duration-200 ${
                           activeMode === 'photo'
-                            ? 'w-16 h-16 rounded-full bg-white shadow-inner'
+                            ? 'w-[60px] h-[60px] rounded-full bg-white shadow-inner'
                             : isRecording
                             ? 'w-8 h-8 rounded-md bg-red-600 shadow-lg'
-                            : 'w-16 h-16 rounded-full bg-red-600 shadow-inner'
+                            : 'w-[60px] h-[60px] rounded-full bg-red-600 shadow-inner'
                         }`}
+                        style={{
+                          width: isRecording ? undefined : '60px',
+                          height: isRecording ? undefined : '60px',
+                        }}
                       />
                     </button>
 
@@ -1451,38 +2067,37 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
                     )}
                   </div>
 
-                  {/* Right: Effect Circle Avatars */}
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => setBeautyFilter(beautyFilter === 'smooth' ? 'none' : 'smooth')}
-                      className={`relative w-11 h-11 rounded-full overflow-hidden border-2 cursor-pointer transition-all active:scale-95 shadow-lg ${
-                        beautyFilter === 'smooth' ? 'border-rose-400 ring-2 ring-rose-400/50 scale-105' : 'border-white/60'
+                  {/* Right: ปุ่มเปิดใช้งานเอฟเฟกต์ & วัตถุเสมือน AR (Effects Button) */}
+                  <button
+                    type="button"
+                    onClick={() => setIsEffectsDrawerOpen(true)}
+                    className="group flex flex-col items-center gap-1 cursor-pointer active:scale-95 transition-transform"
+                    title="เปิดใช้งานเอฟเฟกต์และวัตถุเสมือน AR"
+                  >
+                    <div
+                      className={`relative w-12 h-12 rounded-xl overflow-hidden border-2 shadow-xl flex items-center justify-center transition-all ${
+                        activeArEffect
+                          ? 'border-pink-400 bg-gradient-to-tr from-pink-600 via-rose-500 to-amber-500 ring-2 ring-pink-400/60 scale-105'
+                          : 'border-white/70 bg-gradient-to-tr from-zinc-800 to-zinc-900 group-hover:scale-105 group-hover:border-pink-400'
                       }`}
-                      title="เอฟเฟกต์บิวตี้ใบหน้า"
                     >
-                      <img
-                        src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80"
-                        alt="Beauty Avatar"
-                        className="w-full h-full object-cover"
+                      <Sparkles
+                        className={`w-6 h-6 transition-all ${
+                          activeArEffect ? 'text-white animate-spin-slow' : 'text-yellow-400 group-hover:scale-110'
+                        }`}
                       />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setBeautyFilter(beautyFilter === 'glow' ? 'none' : 'glow')}
-                      className={`relative w-11 h-11 rounded-full overflow-hidden border-2 cursor-pointer transition-all active:scale-95 shadow-lg ${
-                        beautyFilter === 'glow' ? 'border-cyan-400 ring-2 ring-cyan-400/50 scale-105' : 'border-white/60'
+                      {activeArEffect && (
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 border border-black animate-ping" />
+                      )}
+                    </div>
+                    <span
+                      className={`text-[10px] font-medium drop-shadow ${
+                        activeArEffect ? 'text-pink-300 font-bold' : 'text-zinc-300'
                       }`}
-                      title="เอฟเฟกต์แฟนซีกราฟิก"
                     >
-                      <img
-                        src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80"
-                        alt="Fancy Avatar"
-                        className="w-full h-full object-cover"
-                      />
-                    </button>
-                  </div>
+                      {activeArEffect ? 'เปิดอยู่' : 'เอฟเฟกต์'}
+                    </span>
+                  </button>
                 </div>
 
                 {/* 4.3 Very Bottom Navigation Bar (กล้อง | สร้างสรรค์ | LIVE) */}
@@ -1573,6 +2188,392 @@ export const CreateVideoModal: React.FC<CreateVideoModalProps> = ({
                     </div>
                   ))}
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Interactive Effects & AR Virtual Objects Drawer (แผงเลือกเอฟเฟกต์ & วัตถุเสมือน AR) */}
+          {isEffectsDrawerOpen && (
+            <div
+              className="absolute inset-0 z-50 bg-black/80 backdrop-blur-md p-3 flex flex-col justify-end animate-in fade-in"
+              onClick={() => setIsEffectsDrawerOpen(false)}
+            >
+              <div
+                className="bg-zinc-900/98 border border-zinc-700 rounded-3xl p-4 space-y-3 max-h-[82vh] overflow-y-auto text-left shadow-2xl animate-in slide-in-from-bottom-8 duration-200"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Drawer Header */}
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-pink-600 via-rose-500 to-amber-500 flex items-center justify-center text-white shadow-md">
+                      <Sparkles className="w-4 h-4 text-yellow-300" />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-sm text-white flex items-center gap-2">
+                        <span>เอฟเฟกต์ & วัตถุเสมือน AR</span>
+                        {activeArEffect && (
+                          <span className="px-2 py-0.5 rounded-full bg-pink-500/25 text-pink-300 text-[10px] font-bold border border-pink-500/40 animate-pulse">
+                            กำลังใช้งาน
+                          </span>
+                        )}
+                      </h4>
+                      <span className="text-[10px] text-zinc-400">
+                        เลือกเปิดใช้งานวัตถุ พร็อพ และเอฟเฟกต์บรรยากาศเสมือนจริงบนหน้าจอ
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsEffectsDrawerOpen(false)}
+                    className="w-7 h-7 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Category Filter Tabs */}
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1 text-xs font-semibold">
+                  {[
+                    { id: 'all', label: '🌟 ทั้งหมด' },
+                    { id: 'props', label: '🕶️ วัตถุ AR' },
+                    { id: 'atmosphere', label: '🎆 บรรยากาศ' },
+                    { id: 'commerce', label: '🛍️ ป้ายไลฟ์ขายของ' },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setEffectsFilterCategory(tab.id as any)}
+                      className={`px-3 py-1.5 rounded-full whitespace-nowrap cursor-pointer transition-all ${
+                        effectsFilterCategory === tab.id
+                          ? 'bg-gradient-to-r from-pink-600 to-rose-600 text-white shadow-md font-bold'
+                          : 'bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700'
+                      }`}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Quick Action: ปิดเอฟเฟกต์ / ล้างวัตถุทั้งหมด */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveArEffect(null);
+                    }}
+                    className={`w-full py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer border ${
+                      activeArEffect === null
+                        ? 'bg-zinc-800 text-white border-zinc-600'
+                        : 'bg-red-500/10 hover:bg-red-500/20 text-red-300 border-red-500/30'
+                    }`}
+                  >
+                    <span>🚫 ไม่ใช้เอฟเฟกต์ / ล้างวัตถุบนจอ</span>
+                  </button>
+                </div>
+
+                {/* Effects Grid */}
+                <div className="grid grid-cols-3 gap-2.5 pt-1">
+                  {AR_EFFECTS_LIST.filter(
+                    (ef) => effectsFilterCategory === 'all' || ef.category === effectsFilterCategory
+                  ).map((effect) => {
+                    const isActive = activeArEffect === effect.id;
+                    return (
+                      <button
+                        key={effect.id}
+                        type="button"
+                        onClick={() => {
+                          setActiveArEffect(isActive ? null : effect.id);
+                        }}
+                        className={`relative p-3 rounded-2xl border flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer group text-center ${
+                          isActive
+                            ? 'bg-gradient-to-b from-pink-950/70 via-rose-950/40 to-zinc-900 border-pink-400 ring-2 ring-pink-500/50 shadow-lg scale-102'
+                            : 'bg-zinc-950/70 border-zinc-800 hover:border-zinc-600 hover:bg-zinc-800/50'
+                        }`}
+                      >
+                        {/* Badge if present */}
+                        {effect.badge && (
+                          <span className="absolute top-1.5 right-1.5 px-1.5 py-0.2 rounded-full bg-pink-500 text-[8px] font-bold text-white shadow">
+                            {effect.badge}
+                          </span>
+                        )}
+
+                        {/* Icon Emoji */}
+                        <div className="text-3xl filter drop-shadow group-hover:scale-110 transition-transform">
+                          {effect.icon}
+                        </div>
+
+                        {/* Title */}
+                        <div className="text-[11px] font-bold text-white leading-tight line-clamp-1">
+                          {effect.name}
+                        </div>
+
+                        {/* Status / Active label */}
+                        <span
+                          className={`text-[9px] font-medium ${
+                            isActive ? 'text-pink-300 font-bold' : 'text-zinc-500'
+                          }`}
+                        >
+                          {isActive ? '✓ กำลังใช้งาน' : 'แตะเพื่อเปิดใช้'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Quick Beauty Filter Section inside Effects Drawer */}
+                <div className="pt-2 border-t border-zinc-800">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[11px] font-bold text-zinc-400 flex items-center gap-1">
+                      <Smile className="w-3.5 h-3.5 text-rose-400" />
+                      <span>ฟิลเตอร์ผิวเนียน & โทนสี (Beauty Filter)</span>
+                    </span>
+                    <span className="text-[10px] text-zinc-500">เลือกควบคู่กับวัตถุ AR ได้</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
+                    {[
+                      { id: 'none', label: '🎨 ต้นฉบับ' },
+                      { id: 'smooth', label: '✨ ผิวเนียน' },
+                      { id: 'glow', label: '💖 โกลว์' },
+                      { id: 'cyber', label: '⚡ ไซเบอร์' },
+                      { id: 'vintage', label: '🎞️ วินเทจ' },
+                      { id: 'mono', label: '🖤 ดำขาว' },
+                    ].map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setBeautyFilter(f.id as any)}
+                        className={`px-2.5 py-1 rounded-xl text-xs font-medium whitespace-nowrap cursor-pointer transition-all border ${
+                          beautyFilter === f.id
+                            ? 'bg-rose-500 text-white font-bold border-rose-300 shadow'
+                            : 'bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700'
+                        }`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =========================================================================
+              Video Library & Import Drawer (แก้ปัญหาคลิกเข้ามาแล้วหาวิดีโอไม่เจอ)
+             ========================================================================= */}
+          {isUploadPickerOpen && (
+            <div
+              className="absolute inset-0 z-50 bg-black/85 backdrop-blur-md p-3 flex flex-col justify-end animate-in fade-in"
+              onClick={() => setIsUploadPickerOpen(false)}
+            >
+              <div
+                className="bg-zinc-900 border border-zinc-700 rounded-3xl p-4 space-y-3.5 max-h-[86vh] overflow-y-auto text-left shadow-2xl animate-in slide-in-from-bottom-8 duration-200"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
+                      <Film className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                        <span>นำเข้าวิดีโอ & คลังคลิปสร้างคอนเทนต์</span>
+                      </h4>
+                      <span className="text-[10px] text-zinc-400">
+                        เลือกคลิปตัวอย่างพร้อมใช้ หรืออัปโหลดจากเครื่อง หรือนำเข้าด้วย URL
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsUploadPickerOpen(false)}
+                    className="w-7 h-7 rounded-full bg-zinc-800 hover:bg-zinc-700 flex items-center justify-center text-zinc-400 hover:text-white cursor-pointer transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Tabs */}
+                <div className="flex items-center gap-1.5 bg-zinc-950/70 p-1 rounded-2xl border border-zinc-800 text-xs font-semibold">
+                  <button
+                    type="button"
+                    onClick={() => setUploadPickerTab('preset')}
+                    className={`flex-1 py-1.5 px-2 rounded-xl text-center transition-all cursor-pointer ${
+                      uploadPickerTab === 'preset'
+                        ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold shadow'
+                        : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    🎬 คลิปพร้อมใช้ ({PRESET_SAMPLE_VIDEOS.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUploadPickerTab('device')}
+                    className={`flex-1 py-1.5 px-2 rounded-xl text-center transition-all cursor-pointer ${
+                      uploadPickerTab === 'device'
+                        ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold shadow'
+                        : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    📂 เลือกจากเครื่อง
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setUploadPickerTab('url')}
+                    className={`flex-1 py-1.5 px-2 rounded-xl text-center transition-all cursor-pointer ${
+                      uploadPickerTab === 'url'
+                        ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold shadow'
+                        : 'text-zinc-400 hover:text-zinc-200'
+                    }`}
+                  >
+                    🔗 นำเข้าด้วย URL
+                  </button>
+                </div>
+
+                {/* Tab 1: PRESET SAMPLE VIDEOS */}
+                {uploadPickerTab === 'preset' && (
+                  <div className="space-y-2.5">
+                    <div className="p-2.5 rounded-2xl bg-cyan-950/40 border border-cyan-800/40 text-xs text-cyan-200 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+                      <span>แตะ 1 ครั้งเพื่อนำเข้าคลิปตัวอย่างระดับ Full HD สำหรับทดสอบเอฟเฟกต์และปักตะกร้าทันที</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {PRESET_SAMPLE_VIDEOS.map((item) => (
+                        <div
+                          key={item.id}
+                          onClick={() => handleSelectPresetVideo(item.videoUrl)}
+                          className="group relative rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 hover:border-cyan-500 cursor-pointer transition-all hover:scale-[1.02] shadow-lg flex flex-col"
+                        >
+                          {/* Thumbnail */}
+                          <div className="relative aspect-4/3 w-full overflow-hidden bg-zinc-900">
+                            <img
+                              src={item.thumbnail}
+                              alt={item.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                            <span className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md text-[10px] font-bold text-amber-300 border border-amber-400/30">
+                              {item.tag}
+                            </span>
+                            <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-[10px] font-mono text-zinc-300">
+                              {item.duration}
+                            </span>
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/30">
+                              <div className="w-10 h-10 rounded-full bg-cyan-500 text-white flex items-center justify-center shadow-lg">
+                                <Play className="w-5 h-5 fill-white ml-0.5" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Info */}
+                          <div className="p-2.5 flex flex-col justify-between flex-1">
+                            <div>
+                              <div className="text-[10px] text-cyan-400 font-bold">{item.category}</div>
+                              <h5 className="font-bold text-xs text-white line-clamp-1 group-hover:text-cyan-300">
+                                {item.title}
+                              </h5>
+                            </div>
+                            <button
+                              type="button"
+                              className="mt-2 w-full py-1.5 rounded-xl bg-cyan-600/90 group-hover:bg-cyan-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow cursor-pointer"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                              <span>เลือกคลิปนี้</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Tab 2: DEVICE UPLOAD */}
+                {uploadPickerTab === 'device' && (
+                  <div className="space-y-3 py-2 text-center">
+                    <div
+                      onClick={() => fileInputRef.current?.click()}
+                      className="border-2 border-dashed border-zinc-700 hover:border-cyan-500 bg-zinc-950/70 hover:bg-zinc-950 rounded-3xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all group"
+                    >
+                      <div className="w-16 h-16 rounded-full bg-zinc-800 group-hover:bg-cyan-500/20 text-zinc-300 group-hover:text-cyan-400 flex items-center justify-center transition-colors">
+                        <Upload className="w-8 h-8" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm text-white group-hover:text-cyan-300">
+                          แตะที่นี่เพื่อเลือกไฟล์วิดีโอจากอุปกรณ์ของคุณ
+                        </div>
+                        <div className="text-xs text-zinc-400 mt-1">
+                          รองรับไฟล์ MP4, MOV, WebM, ภาพนิ่ง JPG, PNG (สูงสุด 500MB)
+                        </div>
+                      </div>
+                      <span className="mt-2 py-2 px-5 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold text-xs shadow-lg group-hover:opacity-95">
+                        📂 เปิดคลังภาพ / ไฟล์ในเครื่อง
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400">
+                      💡 แนะนำใช้วิดีโอแนวตั้งอัตราส่วน 9:16 ความละเอียด 1080p เพื่อภาพที่คมชัดที่สุดบนฟีด TikTok Shop
+                    </p>
+                  </div>
+                )}
+
+                {/* Tab 3: IMPORT VIA URL */}
+                {uploadPickerTab === 'url' && (
+                  <div className="space-y-3 py-2">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-zinc-300">
+                        วางลิงก์วิดีโอโดยตรง (Direct MP4 URL)
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="url"
+                          value={customVideoUrlInput}
+                          onChange={(e) => setCustomVideoUrlInput(e.target.value)}
+                          placeholder="https://assets.mixkit.co/... หรือ .mp4 URL"
+                          className="flex-1 bg-zinc-950 border border-zinc-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleImportUrlVideo()}
+                          className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:opacity-95 text-white text-xs font-bold rounded-xl cursor-pointer shadow flex items-center gap-1.5 shrink-0"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                          <span>นำเข้า</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5 pt-2 border-t border-zinc-800">
+                      <span className="text-[11px] text-zinc-400 font-medium">
+                        ตัวอย่างลิงก์วิดีโอฟรีความเร็วสูง (กดเพื่อนำเข้าทันที):
+                      </span>
+                      <div className="flex flex-col gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleImportUrlVideo('/city.mp4')}
+                          className="text-left p-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs text-zinc-300 hover:text-white flex items-center justify-between cursor-pointer"
+                        >
+                          <span>🛹 วิดีโอสตรีทซิตี้ แฟชั่นวัยรุ่น (/city.mp4)</span>
+                          <span className="text-cyan-400 text-[10px] font-bold">แตะใช้นี้ ➔</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleImportUrlVideo('/flower.mp4')}
+                          className="text-left p-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs text-zinc-300 hover:text-white flex items-center justify-between cursor-pointer"
+                        >
+                          <span>🌸 วิดีโอโมเดลมินิมอล บลูมมิ่งอาร์ต (/flower.mp4)</span>
+                          <span className="text-cyan-400 text-[10px] font-bold">แตะใช้นี้ ➔</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleImportUrlVideo('/motor.mp4')}
+                          className="text-left p-2 rounded-xl bg-zinc-950 hover:bg-zinc-800 border border-zinc-800 text-xs text-zinc-300 hover:text-white flex items-center justify-between cursor-pointer"
+                        >
+                          <span>🏍️ วิดีโอมอเตอร์สปอร์ต เรซซิ่งแรลลี่ (/motor.mp4)</span>
+                          <span className="text-cyan-400 text-[10px] font-bold">แตะใช้นี้ ➔</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

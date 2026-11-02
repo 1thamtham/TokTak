@@ -70,3 +70,96 @@
 .animate-music-note-2 {
   animation: musical-note 2.4s ease-out 1.2s infinite;
 }
+
+@keyframes gentle-bob {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(1.5deg);
+  }
+}
+
+@keyframes fall-rain {
+  0% {
+    opacity: 0;
+    transform: translateY(-50px) rotate(0deg) scale(0.9);
+  }
+  15% {
+    opacity: 1;
+  }
+  85% {
+    opacity: 0.95;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(650px) rotate(25deg) scale(1.05);
+  }
+}
+
+@keyframes pulse-aura {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.02);
+  }
+}
+
+@keyframes wing-flap {
+  0%, 100% {
+    transform: scale(1) rotate(0deg);
+  }
+  50% {
+    transform: scale(1.08, 0.96) rotate(-4deg);
+  }
+}
+
+@keyframes star-twinkle {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(0.6) rotate(0deg);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.25) rotate(90deg);
+  }
+}
+
+@keyframes float-up-particle {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.6);
+  }
+  20% {
+    opacity: 1;
+  }
+  80% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-400px) scale(1.1);
+  }
+}
+
+.animate-gentle-bob {
+  animation: gentle-bob 3s ease-in-out infinite;
+}
+
+.animate-wing-left {
+  animation: wing-flap 2.2s ease-in-out infinite;
+  transform-origin: right center;
+}
+
+.animate-wing-right {
+  animation: wing-flap 2.2s ease-in-out infinite;
+  transform-origin: left center;
+}
+
+.animate-pulse-aura {
+  animation: pulse-aura 2s ease-in-out infinite;
+}
+
